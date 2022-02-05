@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
-using GraphX.Measure;
+﻿using GraphX.Measure;
+
 using QuikGraph;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -10,8 +12,8 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         where TEdge : IEdge<TVertex>
     {
         public CompoundLayoutIterationEventArgs(
-            int iteration, 
-            double statusInPercent, 
+            int iteration,
+            double statusInPercent,
             string message,
             IDictionary<TVertex, Point> vertexPositions,
             IDictionary<TVertex, Size> innerCanvasSizes)
@@ -27,6 +29,6 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             get; private set;
         }
 
-        #endregion
+        #endregion ICompoundLayoutIterationEventArgs<TVertex> Members
     }
 }

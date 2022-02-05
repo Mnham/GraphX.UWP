@@ -2,7 +2,7 @@
 
 namespace GraphX.Logic.Algorithms.EdgeRouting
 {
-    public class BundleEdgeRoutingParameters: IEdgeRoutingParameters
+    public class BundleEdgeRoutingParameters : IEdgeRoutingParameters
     {
         /// <summary>
         /// Gets or sets the number of subdivision points each edge should have.

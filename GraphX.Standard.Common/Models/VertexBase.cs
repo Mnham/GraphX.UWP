@@ -3,7 +3,7 @@ using GraphX.Common.Interfaces;
 
 namespace GraphX.Common.Models
 {
-    public abstract class VertexBase: IGraphXVertex
+    public abstract class VertexBase : ObservableObject, IGraphXVertex
     {
         /// <summary>
         /// Gets or sets custom angle associated with the vertex
@@ -24,6 +24,7 @@ namespace GraphX.Common.Models
         {
             ID = -1;
         }
+
         /// <summary>
         /// Unique vertex ID
         /// </summary>

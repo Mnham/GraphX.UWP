@@ -1,6 +1,7 @@
+using GraphX.Measure;
+
 using System.Collections.Generic;
 using System.Threading;
-using GraphX.Measure;
 
 namespace GraphX.Common.Interfaces
 {
@@ -15,6 +16,7 @@ namespace GraphX.Common.Interfaces
         /// Run algorithm calculation
         /// </summary>
         void Compute(CancellationToken cancellationToken);
+
         /// <summary>
         /// Compute edge routing for single edge
         /// </summary>
@@ -40,7 +42,7 @@ namespace GraphX.Common.Interfaces
         IDictionary<TVertex, Point> VertexPositions { get; set; }
 
         /// <summary>
-        /// Gets resulting edge routes collection 
+        /// Gets resulting edge routes collection
         /// </summary>
         IDictionary<TEdge, Point[]> EdgeRoutes { get; }
 
@@ -48,6 +50,5 @@ namespace GraphX.Common.Interfaces
         /// Gets or sets GraphArea allowed rendering size
         /// </summary>
         Rect AreaRectangle { get; set; }
-
     }
 }

@@ -1,11 +1,13 @@
-﻿using System;
+﻿using GraphX.Common.Enums;
+using GraphX.Common.Interfaces;
+using GraphX.Measure;
+
+using QuikGraph;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using GraphX.Measure;
-using GraphX.Common.Enums;
-using GraphX.Common.Interfaces;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -14,10 +16,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         where TEdge : IEdge<TVertex>
         where TGraph : IBidirectionalGraph<TVertex, TEdge>
     {
-        readonly IDictionary<TVertex, Size> _sizes;
+        private readonly IDictionary<TVertex, Size> _sizes;
 
-        public CircularLayoutAlgorithm( TGraph visitedGraph, IDictionary<TVertex, Point> vertexPositions, IDictionary<TVertex, Size> vertexSizes, CircularLayoutParameters parameters )
-            : base( visitedGraph, vertexPositions, parameters )
+        public CircularLayoutAlgorithm(TGraph visitedGraph, IDictionary<TVertex, Point> vertexPositions, IDictionary<TVertex, Size> vertexSizes, CircularLayoutParameters parameters)
+            : base(visitedGraph, vertexPositions, parameters)
         {
             _sizes = vertexSizes;
         }
@@ -25,7 +27,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// <summary>
         /// Gets if current algorithm supports vertex freeze feature (part of VAESPS)
         /// </summary>
-        public override bool SupportsObjectFreeze { get { return false; } }
+        public override bool SupportsObjectFreeze => false;
 
         public override void ResetGraph(IEnumerable<TVertex> vertices, IEnumerable<TEdge> edges)
         {
@@ -36,38 +38,43 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         {
             //calculate the size of the circle
             double perimeter = 0;
-            var usableVertices = VisitedGraph.Vertices.Where(v => v.SkipProcessing != ProcessingOptionEnum.Freeze).ToList();
+            List<TVertex> usableVertices = VisitedGraph.Vertices.Where(v => v.SkipProcessing != ProcessingOptionEnum.Freeze).ToList();
             //if we have empty input positions list we have to fill positions for frozen vertices manualy
-            if(VertexPositions.Count == 0)
-                foreach(var item in VisitedGraph.Vertices.Where(v => v.SkipProcessing == ProcessingOptionEnum.Freeze))
+            if (VertexPositions.Count == 0)
+            {
+                foreach (TVertex item in VisitedGraph.Vertices.Where(v => v.SkipProcessing == ProcessingOptionEnum.Freeze))
+                {
                     VertexPositions.Add(item, new Point());
+                }
+            }
+
             double[] halfSize = new double[usableVertices.Count];
             int i = 0;
-            foreach ( var v in usableVertices)
+            foreach (TVertex v in usableVertices)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 Size s = _sizes[v];
-                halfSize[i] = Math.Sqrt( s.Width * s.Width + s.Height * s.Height ) * 0.5;
+                halfSize[i] = Math.Sqrt(s.Width * s.Width + s.Height * s.Height) * 0.5;
                 perimeter += halfSize[i] * 2;
                 i++;
             }
 
-            double radius = perimeter / ( 2 * Math.PI );
+            double radius = perimeter / (2 * Math.PI);
 
             //
             //precalculation
             //
             double angle = 0, a;
             i = 0;
-            foreach (var v in usableVertices)
+            foreach (TVertex v in usableVertices)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                a = Math.Sin( halfSize[i] * 0.5 / radius ) * 2;
+                a = Math.Sin(halfSize[i] * 0.5 / radius) * 2;
                 angle += a;
                 //if ( ReportOnIterationEndNeeded )
-                    VertexPositions[v] = new Point( Math.Cos( angle ) * radius + radius, Math.Sin( angle ) * radius + radius );
+                VertexPositions[v] = new Point(Math.Cos(angle) * radius + radius, Math.Sin(angle) * radius + radius);
                 angle += a;
             }
 
@@ -75,18 +82,18 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             //    OnIterationEnded( 0, 50, "Precalculation done.", false );
 
             //recalculate radius
-            radius = angle / ( 2 * Math.PI ) * radius;
+            radius = angle / (2 * Math.PI) * radius;
 
             //calculation
             angle = 0;
             i = 0;
-            foreach (var v in usableVertices)
+            foreach (TVertex v in usableVertices)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                a = Math.Sin( halfSize[i] * 0.5 / radius ) * 2;
+                a = Math.Sin(halfSize[i] * 0.5 / radius) * 2;
                 angle += a;
-                VertexPositions[v] = new Point( Math.Cos( angle ) * radius + radius, Math.Sin( angle ) * radius + radius );
+                VertexPositions[v] = new Point(Math.Cos(angle) * radius + radius, Math.Sin(angle) * radius + radius);
                 angle += a;
             }
         }

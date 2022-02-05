@@ -1,13 +1,15 @@
-﻿using System;
+﻿using GraphX.Common.Enums;
+using GraphX.Measure;
+
+using QuikGraph;
+
+using System;
 using System.Collections.Generic;
 using System.Threading;
-using GraphX.Measure;
-using GraphX.Common.Enums;
-using QuikGraph;
 
 namespace GraphX.Common.Interfaces
 {
-    public interface IGXLogicCore<TVertex, TEdge, TGraph>: IDisposable
+    public interface IGXLogicCore<TVertex, TEdge, TGraph> : IDisposable
         where TVertex : class, IGraphXVertex
         where TEdge : class, IGraphXEdge<TVertex>
         where TGraph : class, IMutableBidirectionalGraph<TVertex, TEdge>
@@ -16,6 +18,7 @@ namespace GraphX.Common.Interfaces
         /// Get an algorithm factory that provides different algorithm creation methods
         /// </summary>
         IAlgorithmFactory<TVertex, TEdge, TGraph> AlgorithmFactory { get; }
+
         /// <summary>
         /// Gets or sets algorithm storage that contain all currently defined algorithm objects by type (default or external)
         /// Actual storage data is vital for correct edge routing operation after graph was regenerated.
@@ -36,7 +39,6 @@ namespace GraphX.Common.Interfaces
         /// System property. Till i found another solution. DO NOT TOUCH.
         /// </summary>
         bool IsFilterRemoved { get; }
-
 
         /// <summary>
         /// Gets or sets if async algorithm computations are enabled
@@ -87,7 +89,7 @@ namespace GraphX.Common.Interfaces
         /// Gets or sets default overlap removal algorithm that will be used on graph generation/relayouting
         /// </summary>
         OverlapRemovalAlgorithmTypeEnum DefaultOverlapRemovalAlgorithm { get; set; }
-        
+
         /// <summary>
         /// Gets or sets default edge routing algorithm that will be used on graph generation/relayouting
         /// </summary>
@@ -97,7 +99,7 @@ namespace GraphX.Common.Interfaces
         /// Gets or sets default layout algorithm parameters that will be used on graph generation/relayouting
         /// </summary>
         ILayoutParameters DefaultLayoutAlgorithmParams { get; set; }
-       
+
         /// <summary>
         /// Gets or sets default overlap removal algorithm parameters that will be used on graph generation/relayouting
         /// </summary>

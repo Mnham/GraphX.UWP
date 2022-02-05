@@ -1,5 +1,5 @@
-﻿using GraphX.Measure;
-using GraphX.Common.Interfaces;
+﻿using GraphX.Common.Interfaces;
+using GraphX.Measure;
 
 namespace GraphX.Logic.Models
 {
@@ -11,19 +11,25 @@ namespace GraphX.Logic.Models
 
         public AlgorithmStorage(IExternalLayout<TVertex, TEdge> layout, IExternalOverlapRemoval<TVertex> or, IExternalEdgeRouting<TVertex, TEdge> er)
         {
-            Layout = layout; OverlapRemoval = or; EdgeRouting = er;
+            Layout = layout;
+            OverlapRemoval = or;
+            EdgeRouting = er;
         }
 
         public void RemoveSingleEdge(TEdge edge)
         {
             if (EdgeRouting != null && EdgeRouting.EdgeRoutes != null && EdgeRouting.EdgeRoutes.ContainsKey(edge))
+            {
                 EdgeRouting.EdgeRoutes.Remove(edge);
+            }
         }
 
         public void AddSingleEdge(TEdge edge, Point[] routingPoints = null)
         {
             if (EdgeRouting != null && EdgeRouting.EdgeRoutes != null && !EdgeRouting.EdgeRoutes.ContainsKey(edge))
-                EdgeRouting.EdgeRoutes.Add(edge,routingPoints);
+            {
+                EdgeRouting.EdgeRoutes.Add(edge, routingPoints);
+            }
         }
 
         public void RemoveSingleVertex(TVertex vertex)
@@ -31,18 +37,31 @@ namespace GraphX.Logic.Models
             if (Layout != null)
             {
                 if (Layout.VertexPositions != null && Layout.VertexPositions.ContainsKey(vertex))
+                {
                     Layout.VertexPositions.Remove(vertex);
+                }
+
                 if (Layout.VertexSizes != null && Layout.VertexSizes.ContainsKey(vertex))
+                {
                     Layout.VertexSizes.Remove(vertex);
+                }
             }
             if (OverlapRemoval != null && OverlapRemoval.Rectangles != null && OverlapRemoval.Rectangles.ContainsKey(vertex))
+            {
                 OverlapRemoval.Rectangles.Remove(vertex);
+            }
+
             if (EdgeRouting != null)
             {
                 if (EdgeRouting.VertexSizes != null && EdgeRouting.VertexSizes.ContainsKey(vertex))
+                {
                     EdgeRouting.VertexSizes.Remove(vertex);
+                }
+
                 if (EdgeRouting.VertexPositions != null && EdgeRouting.VertexPositions.ContainsKey(vertex))
+                {
                     EdgeRouting.VertexPositions.Remove(vertex);
+                }
             }
         }
 
@@ -51,18 +70,31 @@ namespace GraphX.Logic.Models
             if (Layout != null)
             {
                 if (Layout.VertexPositions != null && !Layout.VertexPositions.ContainsKey(vertex))
+                {
                     Layout.VertexPositions.Add(vertex, position);
+                }
+
                 if (Layout.VertexSizes != null && !Layout.VertexSizes.ContainsKey(vertex))
+                {
                     Layout.VertexSizes.Add(vertex, size.Size);
+                }
             }
             if (OverlapRemoval != null && OverlapRemoval.Rectangles != null && !OverlapRemoval.Rectangles.ContainsKey(vertex))
+            {
                 OverlapRemoval.Rectangles.Add(vertex, size);
+            }
+
             if (EdgeRouting != null)
             {
                 if (EdgeRouting.VertexSizes != null && !EdgeRouting.VertexSizes.ContainsKey(vertex))
+                {
                     EdgeRouting.VertexSizes.Add(vertex, size);
+                }
+
                 if (EdgeRouting.VertexPositions != null && !EdgeRouting.VertexPositions.ContainsKey(vertex))
+                {
                     EdgeRouting.VertexPositions.Add(vertex, position);
+                }
             }
         }
     }

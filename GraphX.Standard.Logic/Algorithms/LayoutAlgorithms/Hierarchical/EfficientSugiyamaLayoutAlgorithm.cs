@@ -1,13 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using GraphX.Common.Interfaces;
+using GraphX.Measure;
+
+using QuikGraph;
+
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using GraphX.Measure;
-using GraphX.Common.Interfaces;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
-    public partial class EfficientSugiyamaLayoutAlgorithm<TVertex, TEdge, TGraph> 
+    public partial class EfficientSugiyamaLayoutAlgorithm<TVertex, TEdge, TGraph>
         : DefaultParameterizedLayoutAlgorithmBase<TVertex, TEdge, TGraph, EfficientSugiyamaLayoutParameters>,
           ILayoutEdgeRouting<TEdge>
         where TVertex : class
@@ -30,7 +32,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private readonly IDictionary<TVertex, Size> _vertexSizes;
 
-        private readonly IDictionary<TVertex, SugiVertex> _vertexMap = 
+        private readonly IDictionary<TVertex, SugiVertex> _vertexMap =
             new Dictionary<TVertex, SugiVertex>();
 
         /// <summary>
@@ -52,15 +54,15 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             new List<IList<SugiVertex>>();
 
         public EfficientSugiyamaLayoutAlgorithm(
-            TGraph visitedGraph, 
-            EfficientSugiyamaLayoutParameters parameters, 
+            TGraph visitedGraph,
+            EfficientSugiyamaLayoutParameters parameters,
             IDictionary<TVertex, Size> vertexSizes)
             : this(visitedGraph, parameters, null, vertexSizes)
         { }
 
         public EfficientSugiyamaLayoutAlgorithm(
-            TGraph visitedGraph, 
-            EfficientSugiyamaLayoutParameters parameters, 
+            TGraph visitedGraph,
+            EfficientSugiyamaLayoutParameters parameters,
             IDictionary<TVertex, Point> vertexPositions,
             IDictionary<TVertex, Size> vertexSizes)
             : base(visitedGraph, vertexPositions, parameters)
@@ -69,7 +71,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         }
 
         /// <summary>
-        /// Initializes the private _graph field which stores the graph that 
+        /// Initializes the private _graph field which stores the graph that
         /// we operate on.
         /// </summary>
         private void InitTheGraph()
@@ -78,21 +80,23 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             _graph = new BidirectionalGraph<SugiVertex, SugiEdge>();
 
             //copy the vertices
-            foreach (var vertex in VisitedGraph.Vertices)
+            foreach (TVertex vertex in VisitedGraph.Vertices)
             {
                 Size size = new Size();
                 if (_vertexSizes != null)
+                {
                     _vertexSizes.TryGetValue(vertex, out size);
+                }
 
-                var vertexWrapper = new SugiVertex(vertex, size);
+                SugiVertex vertexWrapper = new SugiVertex(vertex, size);
                 _graph.AddVertex(vertexWrapper);
                 _vertexMap[vertex] = vertexWrapper;
             }
 
             //copy the edges
-            foreach (var edge in VisitedGraph.Edges)
+            foreach (TEdge edge in VisitedGraph.Edges)
             {
-                var edgeWrapper = new SugiEdge(edge, _vertexMap[edge.Source], _vertexMap[edge.Target]);
+                SugiEdge edgeWrapper = new SugiEdge(edge, _vertexMap[edge.Source], _vertexMap[edge.Target]);
                 _graph.AddEdge(edgeWrapper);
             }
         }
@@ -107,22 +111,30 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             BuildSparseNormalizedGraph(cancellationToken);
             DoCrossingMinimizations(cancellationToken);
             CalculatePositions();
-            var offsetY = 0d;
+            double offsetY = 0d;
             if (Parameters.Direction == LayoutDirection.LeftToRight)
             {
                 offsetY = VertexPositions.Values.Min(p => p.X);
-                if (offsetY < 0) offsetY = -offsetY;
-                foreach (var item in VertexPositions.ToDictionary(a=> a.Key, b=> b.Value))
+                if (offsetY < 0)
+                {
+                    offsetY = -offsetY;
+                }
+
+                foreach (KeyValuePair<TVertex, Point> item in VertexPositions.ToDictionary(a => a.Key, b => b.Value))
                 {
                     VertexPositions[item.Key] = new Point(item.Value.Y * 1.5 + 0, item.Value.X + offsetY);
                 }
             }
 
-            if(Parameters.Direction == LayoutDirection.RightToLeft)
+            if (Parameters.Direction == LayoutDirection.RightToLeft)
             {
                 offsetY = VertexPositions.Values.Min(p => p.X);
-                if (offsetY < 0) offsetY = -offsetY;
-                foreach (var item in VertexPositions.ToDictionary(a => a.Key, b => b.Value))
+                if (offsetY < 0)
+                {
+                    offsetY = -offsetY;
+                }
+
+                foreach (KeyValuePair<TVertex, Point> item in VertexPositions.ToDictionary(a => a.Key, b => b.Value))
                 {
                     VertexPositions[item.Key] = new Point(-item.Value.Y * 1.5, -item.Value.X + offsetY);
                 }
@@ -130,7 +142,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
             if (Parameters.Direction == LayoutDirection.BottomToTop)
             {
-                foreach (var item in VertexPositions.ToDictionary(a => a.Key, b => b.Value))
+                foreach (KeyValuePair<TVertex, Point> item in VertexPositions.ToDictionary(a => a.Key, b => b.Value))
                 {
                     VertexPositions[item.Key] = new Point(item.Value.X, -item.Value.Y);
                 }
@@ -141,11 +153,8 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         #region ILayoutEdgeRouting<TEdge> Members
 
-        public IDictionary<TEdge, Point[]> EdgeRoutes
-        {
-            get { return _edgeRoutingPoints; }
-        }
+        public IDictionary<TEdge, Point[]> EdgeRoutes => _edgeRoutingPoints;
 
-        #endregion
+        #endregion ILayoutEdgeRouting<TEdge> Members
     }
 }

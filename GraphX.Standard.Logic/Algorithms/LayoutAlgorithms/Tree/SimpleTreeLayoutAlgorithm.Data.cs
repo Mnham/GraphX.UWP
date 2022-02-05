@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-using QuikGraph;
+﻿using QuikGraph;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -20,20 +21,18 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             }
 
             /* Width and Height Optimization */
-
         }
 
-       /// <summary>
-       /// Vertex data class
-       /// </summary>
-       protected class VertexData
+        /// <summary>
+        /// Vertex data class
+        /// </summary>
+        protected class VertexData
         {
             public TVertex Parent;
             public double Translate;
             public double Position;
 
             /* Width and Height Optimization */
-
         }
     }
 }

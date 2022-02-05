@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using QuikGraph;
+﻿using QuikGraph;
 using QuikGraph.Algorithms.Search;
+
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -14,14 +15,16 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         {
             RemoveCycles();
             RemoveLoops();
-            RemoveIsolatedVertices(); //it must run after the two method above           
+            RemoveIsolatedVertices(); //it must run after the two method above
         }
 
         private void RemoveIsolatedVertices()
         {
             _isolatedVertices = _graph.Vertices.Where(v => _graph.Degree(v) == 0).ToList();
-            foreach (var isolatedVertex in _isolatedVertices)
+            foreach (SugiVertex isolatedVertex in _isolatedVertices)
+            {
                 _graph.RemoveVertex(isolatedVertex);
+            }
         }
 
         /// <summary>
@@ -39,17 +42,17 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private void RemoveCycles()
         {
             //find the cycle edges with dfs
-            var cycleEdges = new List<SugiEdge>();
-            var dfsAlgo = new DepthFirstSearchAlgorithm<SugiVertex, SugiEdge>(_graph);
+            List<SugiEdge> cycleEdges = new List<SugiEdge>();
+            DepthFirstSearchAlgorithm<SugiVertex, SugiEdge> dfsAlgo = new DepthFirstSearchAlgorithm<SugiVertex, SugiEdge>(_graph);
             dfsAlgo.BackEdge += cycleEdges.Add;
             dfsAlgo.Compute();
 
             //and revert them
-            foreach (var edge in cycleEdges)
+            foreach (SugiEdge edge in cycleEdges)
             {
                 _graph.RemoveEdge(edge);
                 _graph.AddEdge(new SugiEdge(edge.OriginalEdge, edge.Target, edge.Source));
             }
         }
-	}
+    }
 }

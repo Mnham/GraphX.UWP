@@ -1,17 +1,19 @@
-﻿using System;
+﻿using GraphX.Common.Interfaces;
+using GraphX.Measure;
+
+using QuikGraph;
+
+using System;
 using System.Collections.Generic;
 using System.Threading;
-using GraphX.Measure;
-using GraphX.Common.Interfaces;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms.EdgeRouting
 {
     public abstract class EdgeRoutingAlgorithmBase<TVertex, TEdge, TGraph> : IExternalEdgeRouting<TVertex, TEdge>, IDisposable
         where TVertex : class
-		where TEdge : IEdge<TVertex>
+        where TEdge : IEdge<TVertex>
         where TGraph : class, IBidirectionalGraph<TVertex, TEdge>
-	{
+    {
         protected IEdgeRoutingParameters Parameters;
         protected TGraph Graph;
 
@@ -25,14 +27,10 @@ namespace GraphX.Logic.Algorithms.EdgeRouting
         /// </summary>
         public IDictionary<TVertex, Point> VertexPositions { get; set; }
 
-		/// <summary>
-		/// Gets or sets the resulting routing points of the edges.
-		/// </summary>
-		public IDictionary<TEdge, Point[]> EdgeRoutes
-		{
-			get;
-			private set;
-		}
+        /// <summary>
+        /// Gets or sets the resulting routing points of the edges.
+        /// </summary>
+        public IDictionary<TEdge, Point[]> EdgeRoutes { get; private set; }
 
         /// <summary>
         /// Base class for edge routing algorithms
@@ -41,21 +39,21 @@ namespace GraphX.Logic.Algorithms.EdgeRouting
         /// <param name="vertexPositions">Vertex positions dictionary</param>
         /// <param name="vertexSizes">Vertex sizes dictionary</param>
         /// <param name="parameters">Algorithm parameters</param>
-        protected EdgeRoutingAlgorithmBase(TGraph graph,  IDictionary<TVertex, Point> vertexPositions, IDictionary<TVertex, Rect> vertexSizes, IEdgeRoutingParameters parameters = null) 
-		{
+        protected EdgeRoutingAlgorithmBase(TGraph graph, IDictionary<TVertex, Point> vertexPositions, IDictionary<TVertex, Rect> vertexSizes, IEdgeRoutingParameters parameters = null)
+        {
             Graph = graph;
             Parameters = parameters;
             VertexSizes = vertexSizes ?? new Dictionary<TVertex, Rect>();
             VertexPositions = vertexPositions ?? new Dictionary<TVertex, Point>();
             EdgeRoutes = new Dictionary<TEdge, Point[]>();
-		}
+        }
 
         /// <summary>
         /// Returns algorithm parameters as specified type
         /// </summary>
         /// <typeparam name="T">Type</typeparam>
         public T GetParameters<T>()
-            where T: class
+            where T : class
         {
             return Parameters as T;
         }
@@ -70,7 +68,6 @@ namespace GraphX.Logic.Algorithms.EdgeRouting
         /// </summary>
         /// <param name="edge">Supplied edge data</param>
         public abstract Point[] ComputeSingle(TEdge edge);
-
 
         /// <summary>
         /// Update data stored in algorithm for specified vertex

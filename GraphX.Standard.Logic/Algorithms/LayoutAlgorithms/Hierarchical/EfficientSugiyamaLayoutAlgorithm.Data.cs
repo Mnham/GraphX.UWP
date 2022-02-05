@@ -1,6 +1,8 @@
-﻿using System.Diagnostics;
-using GraphX.Measure;
+﻿using GraphX.Measure;
+
 using QuikGraph;
+
+using System.Diagnostics;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -17,10 +19,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// <summary>
             /// Gets the original edge of this SugiEdge.
             /// </summary>
-            public TEdge OriginalEdge { get { return this.Tag; } }
+            public TEdge OriginalEdge => Tag;
 
             /// <summary>
-            /// Gets or sets that the edge is included in a 
+            /// Gets or sets that the edge is included in a
             /// type 1 conflict as a non-inner segment (true) or not (false).
             /// </summary>
             public bool Marked = false;
@@ -37,8 +39,6 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 Marked = TempMark;
             }
         }
-
-
 
         protected enum VertexTypes
         {
@@ -76,7 +76,9 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             public int LayerIndex { get; set; }
             public double MeasuredPosition { get; set; }
 
-            public SugiVertex() { }
+            public SugiVertex()
+            {
+            }
 
             public SugiVertex(TIVertex originalVertex)
             {

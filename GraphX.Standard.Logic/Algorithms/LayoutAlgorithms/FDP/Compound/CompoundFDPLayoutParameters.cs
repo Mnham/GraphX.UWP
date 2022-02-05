@@ -25,15 +25,8 @@
         /// </summary>
         public double IdealEdgeLength
         {
-            get { return _idealEdgeLength; }
-            set
-            {
-                if (value == _idealEdgeLength)
-                    return;
-
-                _idealEdgeLength = value;
-                NotifyPropertyChanged("IdealEdgeLength");
-            }
+            get => _idealEdgeLength;
+            set => SetProperty(ref _idealEdgeLength, value);
         }
 
         /// <summary>
@@ -41,49 +34,28 @@
         /// </summary>
         public double ElasticConstant
         {
-            get { return _elasticConstant; }
-            set
-            {
-                if (value == _elasticConstant)
-                    return;
-
-                _elasticConstant = value;
-                NotifyPropertyChanged("ElasticConstant");
-            }
+            get => _elasticConstant;
+            set => SetProperty(ref _elasticConstant, value);
         }
 
         /// <summary>
-        /// Gets or sets the repulsion constant for the node-node 
+        /// Gets or sets the repulsion constant for the node-node
         /// repulsion.
         /// </summary>
         public double RepulsionConstant
         {
-            get { return _repulsionConstant; }
-            set
-            {
-                if (value == _repulsionConstant)
-                    return;
-
-                _repulsionConstant = value;
-                NotifyPropertyChanged("RepulsionConstant");
-            }
+            get => _repulsionConstant;
+            set => SetProperty(ref _repulsionConstant, value);
         }
 
         /// <summary>
-        /// Gets or sets the factor of the ideal edge length for the 
+        /// Gets or sets the factor of the ideal edge length for the
         /// inter-graph edges.
         /// </summary>
         public double NestingFactor
         {
-            get { return _nestingFactor; }
-            set
-            {
-                if (value == _nestingFactor)
-                    return;
-
-                _nestingFactor = value;
-                NotifyPropertyChanged("NestingFactor");
-            }
+            get => _nestingFactor;
+            set => SetProperty(ref _nestingFactor, value);
         }
 
         /// <summary>
@@ -91,132 +63,62 @@
         /// </summary>
         public double GravitationFactor
         {
-            get { return _gravitationFactor; }
-            set
-            {
-                if (value == _gravitationFactor)
-                    return;
-
-                _gravitationFactor = value;
-                NotifyPropertyChanged("GravitationFactor");
-            }
+            get => _gravitationFactor;
+            set => SetProperty(ref _gravitationFactor, value);
         }
 
         public int Phase1Iterations
         {
-            get { return _phase1Iterations; }
-            set
-            {
-                if (value == _phase1Iterations)
-                    return;
-
-                _phase1Iterations = value;
-                NotifyPropertyChanged("Phase1Iterations");
-            }
+            get => _phase1Iterations;
+            set => SetProperty(ref _phase1Iterations, value);
         }
 
         public int Phase2Iterations
         {
-            get { return _phase2Iterations; }
-            set
-            {
-                if (value == _phase2Iterations)
-                    return;
-
-                _phase2Iterations = value;
-                NotifyPropertyChanged("Phase2Iterations");
-            }
+            get => _phase2Iterations;
+            set => SetProperty(ref _phase2Iterations, value);
         }
 
         public int Phase3Iterations
         {
-            get { return _phase3Iterations; }
-            set
-            {
-                if (value == _phase3Iterations)
-                    return;
-
-                _phase3Iterations = value;
-                NotifyPropertyChanged("Phase3Iterations");
-            }
+            get => _phase3Iterations;
+            set => SetProperty(ref _phase3Iterations, value);
         }
 
         public double Phase2TemperatureInitialMultiplier
         {
-            get { return _phase2TemperatureInitialMultiplier; }
-            set
-            {
-                if (value == _phase2TemperatureInitialMultiplier)
-                    return;
-
-                _phase2TemperatureInitialMultiplier = value;
-                NotifyPropertyChanged("Phase2TemperatureInitialMultiplier");
-            }
+            get => _phase2TemperatureInitialMultiplier;
+            set => SetProperty(ref _phase2TemperatureInitialMultiplier, value);
         }
 
         public double Phase3TemperatureInitialMultiplier
         {
-            get { return _phase3TemperatureInitialMultiplier; }
-            set
-            {
-                if (value == _phase3TemperatureInitialMultiplier)
-                    return;
-
-                _phase3TemperatureInitialMultiplier = value;
-                NotifyPropertyChanged("Phase3TemperatureInitialMultiplier");
-            }
+            get => _phase3TemperatureInitialMultiplier;
+            set => SetProperty(ref _phase3TemperatureInitialMultiplier, value);
         }
 
         public double TemperatureDecreasing
         {
-            get { return _temperatureDecreasing; }
-            set
-            {
-                if (value == _temperatureDecreasing)
-                    return;
-
-                _temperatureDecreasing = value;
-                NotifyPropertyChanged("TemperatureDecreasing");
-            }
+            get => _temperatureDecreasing;
+            set => SetProperty(ref _temperatureDecreasing, value);
         }
 
         public double TemperatureFactor
         {
-            get { return _temperatureFactor; }
-            set
-            {
-                if (value == _temperatureFactor)
-                    return;
-
-                _temperatureFactor = value;
-                NotifyPropertyChanged("TemperatureFactor");
-            }
+            get => _temperatureFactor;
+            set => SetProperty(ref _temperatureFactor, value);
         }
 
         public double DisplacementLimitMultiplier
         {
-            get { return _displacementLimitMultiplier; }
-            set
-            {
-                if (value == _displacementLimitMultiplier)
-                    return;
-
-                _displacementLimitMultiplier = value;
-                NotifyPropertyChanged("DisplacementLimitMultiplier");
-            }
+            get => _displacementLimitMultiplier;
+            set => SetProperty(ref _displacementLimitMultiplier, value);
         }
 
         public double SeparationMultiplier
         {
-            get { return _separationMultiplier; }
-            set
-            {
-                if (value == _separationMultiplier)
-                    return;
-
-                _separationMultiplier = value;
-                NotifyPropertyChanged("SeparationMultiplier");
-            }
+            get => _separationMultiplier;
+            set => SetProperty(ref _separationMultiplier, value);
         }
     }
 }

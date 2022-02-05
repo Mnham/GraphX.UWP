@@ -1,236 +1,248 @@
-﻿using System.Collections.Generic;
+﻿using QuikGraph;
+
+using System.Collections.Generic;
 using System.Linq;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms
 {
-	public class HierarchicalGraph<TVertex, TEdge> :
-		BidirectionalGraph<TVertex, TEdge>, IHierarchicalBidirectionalGraph<TVertex, TEdge>
-		where TEdge : TypedEdge<TVertex>
-	{
-		#region Properties, fields
-		private class TypedEdgeCollectionWrapper
-		{
-			public readonly List<TEdge> InHierarchicalEdges = new List<TEdge>();
-			public readonly List<TEdge> OutHierarchicalEdges = new List<TEdge>();
-			public readonly List<TEdge> InGeneralEdges = new List<TEdge>();
-			public readonly List<TEdge> OutGeneralEdges = new List<TEdge>();
-		}
-		private readonly Dictionary<TVertex, TypedEdgeCollectionWrapper> _typedEdgeCollections = new Dictionary<TVertex, TypedEdgeCollectionWrapper>();
-		#endregion
+    public class HierarchicalGraph<TVertex, TEdge> :
+        BidirectionalGraph<TVertex, TEdge>, IHierarchicalBidirectionalGraph<TVertex, TEdge>
+        where TEdge : TypedEdge<TVertex>
+    {
+        #region Properties, fields
 
-		#region Constructors
-		public HierarchicalGraph()
-		{ }
+        private class TypedEdgeCollectionWrapper
+        {
+            public readonly List<TEdge> InHierarchicalEdges = new List<TEdge>();
+            public readonly List<TEdge> OutHierarchicalEdges = new List<TEdge>();
+            public readonly List<TEdge> InGeneralEdges = new List<TEdge>();
+            public readonly List<TEdge> OutGeneralEdges = new List<TEdge>();
+        }
 
-		public HierarchicalGraph(bool allowParallelEdges)
-			: base(allowParallelEdges) { }
+        private readonly Dictionary<TVertex, TypedEdgeCollectionWrapper> _typedEdgeCollections = new Dictionary<TVertex, TypedEdgeCollectionWrapper>();
 
-		public HierarchicalGraph(bool allowParallelEdges, int vertexCapacity)
-			: base(allowParallelEdges, vertexCapacity) { }
-		#endregion
+        #endregion Properties, fields
 
-		#region Add/Remove Vertex
-		public override bool AddVertex(TVertex v)
-		{
-			base.AddVertex(v);
-			if (!_typedEdgeCollections.ContainsKey(v))
-			{
-				_typedEdgeCollections[v] = new TypedEdgeCollectionWrapper();
-			}
-			return true;
-		}
+        #region Constructors
 
-		public override bool RemoveVertex(TVertex v)
-		{
-			bool ret = base.RemoveVertex(v);
-			if (ret)
-			{
-				//remove the edges from the typedEdgeCollections
-				TypedEdgeCollectionWrapper edgeCollection = _typedEdgeCollections[v];
-				foreach (TEdge e in edgeCollection.InGeneralEdges)
-					_typedEdgeCollections[e.Source].OutGeneralEdges.Remove(e);
-				foreach (TEdge e in edgeCollection.OutGeneralEdges)
-					_typedEdgeCollections[e.Target].InGeneralEdges.Remove(e);
+        public HierarchicalGraph()
+        { }
 
-				foreach (TEdge e in edgeCollection.InHierarchicalEdges)
-					_typedEdgeCollections[e.Source].OutHierarchicalEdges.Remove(e);
-				foreach (TEdge e in edgeCollection.OutHierarchicalEdges)
-					_typedEdgeCollections[e.Target].InHierarchicalEdges.Remove(e);
+        public HierarchicalGraph(bool allowParallelEdges)
+            : base(allowParallelEdges) { }
 
-				_typedEdgeCollections.Remove(v);
-				return true;
-			}
-			
-			return false;
-		}
-		#endregion
+        public HierarchicalGraph(bool allowParallelEdges, int vertexCapacity)
+            : base(allowParallelEdges, vertexCapacity) { }
 
-		#region Add/Remove Edge
-		public override bool AddEdge(TEdge e)
-		{
-		    if (!base.AddEdge(e)) return false;
-		    //add edge to the source collections
-		    var sourceEdgeCollection = _typedEdgeCollections[e.Source];
-		    switch (e.Type)
-		    {
-		        case EdgeTypes.General:
-		            sourceEdgeCollection.OutGeneralEdges.Add(e);
-		            break;
-		        case EdgeTypes.Hierarchical:
-		            sourceEdgeCollection.OutHierarchicalEdges.Add(e);
-		            break;
-		    }
+        #endregion Constructors
 
-		    //add edge to the target collections
-		    var targetEdgeCollection = _typedEdgeCollections[e.Target];
-		    switch (e.Type)
-		    {
-		        case EdgeTypes.General:
-		            targetEdgeCollection.InGeneralEdges.Add(e);
-		            break;
-		        case EdgeTypes.Hierarchical:
-		            targetEdgeCollection.InHierarchicalEdges.Add(e);
-		            break;
-		    }
-		    return true;
-		}
+        #region Add/Remove Vertex
 
-		public override bool RemoveEdge(TEdge e)
-		{
-		    if (!base.RemoveEdge(e)) return false;
-		    //remove edge from the source collections
-		    var sourceEdgeCollection = _typedEdgeCollections[e.Source];
-		    switch (e.Type)
-		    {
-		        case EdgeTypes.General:
-		            sourceEdgeCollection.OutGeneralEdges.Remove(e);
-		            break;
-		        case EdgeTypes.Hierarchical:
-		            sourceEdgeCollection.OutHierarchicalEdges.Remove(e);
-		            break;
-		    }
+        public override bool AddVertex(TVertex v)
+        {
+            base.AddVertex(v);
+            if (!_typedEdgeCollections.ContainsKey(v))
+            {
+                _typedEdgeCollections[v] = new TypedEdgeCollectionWrapper();
+            }
+            return true;
+        }
 
-		    //remove edge from the target collections
-		    var targetEdgeCollection = _typedEdgeCollections[e.Target];
-		    switch (e.Type)
-		    {
-		        case EdgeTypes.General:
-		            targetEdgeCollection.InGeneralEdges.Remove(e);
-		            break;
-		        case EdgeTypes.Hierarchical:
-		            targetEdgeCollection.InHierarchicalEdges.Remove(e);
-		            break;
-		    }
-		    return true;
-		}
+        public override bool RemoveVertex(TVertex v)
+        {
+            bool ret = base.RemoveVertex(v);
+            if (ret)
+            {
+                //remove the edges from the typedEdgeCollections
+                TypedEdgeCollectionWrapper edgeCollection = _typedEdgeCollections[v];
+                foreach (TEdge e in edgeCollection.InGeneralEdges)
+                {
+                    _typedEdgeCollections[e.Source].OutGeneralEdges.Remove(e);
+                }
 
-		#endregion
+                foreach (TEdge e in edgeCollection.OutGeneralEdges)
+                {
+                    _typedEdgeCollections[e.Target].InGeneralEdges.Remove(e);
+                }
 
-		#region Hierarchical Edges
-		public IEnumerable<TEdge> HierarchicalEdgesFor(TVertex v)
-		{
-			var collections = _typedEdgeCollections[v];
-			return collections.InHierarchicalEdges.Concat(collections.OutHierarchicalEdges);
-		}
+                foreach (TEdge e in edgeCollection.InHierarchicalEdges)
+                {
+                    _typedEdgeCollections[e.Source].OutHierarchicalEdges.Remove(e);
+                }
 
-		public int HierarchicalEdgeCountFor(TVertex v)
-		{
-			return _typedEdgeCollections[v].InHierarchicalEdges.Count + _typedEdgeCollections[v].OutHierarchicalEdges.Count;
-		}
+                foreach (TEdge e in edgeCollection.OutHierarchicalEdges)
+                {
+                    _typedEdgeCollections[e.Target].InHierarchicalEdges.Remove(e);
+                }
 
-		public IEnumerable<TEdge> InHierarchicalEdges(TVertex v)
-		{
-			return _typedEdgeCollections[v].InHierarchicalEdges;
-		}
+                _typedEdgeCollections.Remove(v);
+                return true;
+            }
 
-		public int InHierarchicalEdgeCount(TVertex v)
-		{
-			return _typedEdgeCollections[v].InHierarchicalEdges.Count;
-		}
+            return false;
+        }
 
-		public IEnumerable<TEdge> OutHierarchicalEdges(TVertex v)
-		{
-			return _typedEdgeCollections[v].OutHierarchicalEdges;
-		}
+        #endregion Add/Remove Vertex
 
-		public int OutHierarchicalEdgeCount(TVertex v)
-		{
-			return _typedEdgeCollections[v].OutHierarchicalEdges.Count;
-		}
-		#endregion
+        #region Add/Remove Edge
 
-		#region General Edges
-		public IEnumerable<TEdge> GeneralEdgesFor(TVertex v)
-		{
-			var collections = _typedEdgeCollections[v];
-			foreach (var e in collections.InGeneralEdges)
-			{
-				yield return e;
-			}
-			foreach (var e in collections.OutGeneralEdges)
-			{
-				yield return e;
-			}
-		}
+        public override bool AddEdge(TEdge e)
+        {
+            if (!base.AddEdge(e))
+            {
+                return false;
+            }
+            //add edge to the source collections
+            TypedEdgeCollectionWrapper sourceEdgeCollection = _typedEdgeCollections[e.Source];
+            switch (e.Type)
+            {
+                case EdgeTypes.General:
+                    sourceEdgeCollection.OutGeneralEdges.Add(e);
+                    break;
 
-		public int GeneralEdgeCountFor(TVertex v)
-		{
-			return _typedEdgeCollections[v].InGeneralEdges.Count + _typedEdgeCollections[v].OutGeneralEdges.Count;
-		}
+                case EdgeTypes.Hierarchical:
+                    sourceEdgeCollection.OutHierarchicalEdges.Add(e);
+                    break;
+            }
 
-		public IEnumerable<TEdge> InGeneralEdges(TVertex v)
-		{
-			return _typedEdgeCollections[v].InGeneralEdges;
-		}
+            //add edge to the target collections
+            TypedEdgeCollectionWrapper targetEdgeCollection = _typedEdgeCollections[e.Target];
+            switch (e.Type)
+            {
+                case EdgeTypes.General:
+                    targetEdgeCollection.InGeneralEdges.Add(e);
+                    break;
 
-		public int InGeneralEdgeCount(TVertex v)
-		{
-			return _typedEdgeCollections[v].InGeneralEdges.Count;
-		}
+                case EdgeTypes.Hierarchical:
+                    targetEdgeCollection.InHierarchicalEdges.Add(e);
+                    break;
+            }
+            return true;
+        }
 
-		public IEnumerable<TEdge> OutGeneralEdges(TVertex v)
-		{
-			return _typedEdgeCollections[v].OutGeneralEdges;
-		}
+        public override bool RemoveEdge(TEdge e)
+        {
+            if (!base.RemoveEdge(e))
+            {
+                return false;
+            }
+            //remove edge from the source collections
+            TypedEdgeCollectionWrapper sourceEdgeCollection = _typedEdgeCollections[e.Source];
+            switch (e.Type)
+            {
+                case EdgeTypes.General:
+                    sourceEdgeCollection.OutGeneralEdges.Remove(e);
+                    break;
 
-		public int OutGeneralEdgeCount(TVertex v)
-		{
-			return _typedEdgeCollections[v].OutGeneralEdges.Count;
-		}
-		#endregion
+                case EdgeTypes.Hierarchical:
+                    sourceEdgeCollection.OutHierarchicalEdges.Remove(e);
+                    break;
+            }
 
-		#region IHierarchicalBidirectionalGraph<TVertex,TEdge> Members
+            //remove edge from the target collections
+            TypedEdgeCollectionWrapper targetEdgeCollection = _typedEdgeCollections[e.Target];
+            switch (e.Type)
+            {
+                case EdgeTypes.General:
+                    targetEdgeCollection.InGeneralEdges.Remove(e);
+                    break;
 
+                case EdgeTypes.Hierarchical:
+                    targetEdgeCollection.InHierarchicalEdges.Remove(e);
+                    break;
+            }
+            return true;
+        }
 
-		public IEnumerable<TEdge> HierarchicalEdges
-		{
-			get { return Vertices.SelectMany(OutHierarchicalEdges); }
-		}
+        #endregion Add/Remove Edge
 
-		public int HierarchicalEdgeCount
-		{
-			get
-			{
-				return Vertices.Sum(v => InHierarchicalEdgeCount(v));
-			}
-		}
+        #region Hierarchical Edges
 
-		public IEnumerable<TEdge> GeneralEdges
-		{
-			get {
-			    return Vertices.SelectMany(OutGeneralEdges);
-			}
-		}
+        public IEnumerable<TEdge> HierarchicalEdgesFor(TVertex v)
+        {
+            TypedEdgeCollectionWrapper collections = _typedEdgeCollections[v];
+            return collections.InHierarchicalEdges.Concat(collections.OutHierarchicalEdges);
+        }
 
-		public int GeneralEdgeCount
-		{
-			get
-			{
-				return Vertices.Sum(v => InGeneralEdgeCount(v));
-			}
-		}
+        public int HierarchicalEdgeCountFor(TVertex v)
+        {
+            return _typedEdgeCollections[v].InHierarchicalEdges.Count + _typedEdgeCollections[v].OutHierarchicalEdges.Count;
+        }
 
-		#endregion
-	}
+        public IEnumerable<TEdge> InHierarchicalEdges(TVertex v)
+        {
+            return _typedEdgeCollections[v].InHierarchicalEdges;
+        }
+
+        public int InHierarchicalEdgeCount(TVertex v)
+        {
+            return _typedEdgeCollections[v].InHierarchicalEdges.Count;
+        }
+
+        public IEnumerable<TEdge> OutHierarchicalEdges(TVertex v)
+        {
+            return _typedEdgeCollections[v].OutHierarchicalEdges;
+        }
+
+        public int OutHierarchicalEdgeCount(TVertex v)
+        {
+            return _typedEdgeCollections[v].OutHierarchicalEdges.Count;
+        }
+
+        #endregion Hierarchical Edges
+
+        #region General Edges
+
+        public IEnumerable<TEdge> GeneralEdgesFor(TVertex v)
+        {
+            TypedEdgeCollectionWrapper collections = _typedEdgeCollections[v];
+            foreach (TEdge e in collections.InGeneralEdges)
+            {
+                yield return e;
+            }
+            foreach (TEdge e in collections.OutGeneralEdges)
+            {
+                yield return e;
+            }
+        }
+
+        public int GeneralEdgeCountFor(TVertex v)
+        {
+            return _typedEdgeCollections[v].InGeneralEdges.Count + _typedEdgeCollections[v].OutGeneralEdges.Count;
+        }
+
+        public IEnumerable<TEdge> InGeneralEdges(TVertex v)
+        {
+            return _typedEdgeCollections[v].InGeneralEdges;
+        }
+
+        public int InGeneralEdgeCount(TVertex v)
+        {
+            return _typedEdgeCollections[v].InGeneralEdges.Count;
+        }
+
+        public IEnumerable<TEdge> OutGeneralEdges(TVertex v)
+        {
+            return _typedEdgeCollections[v].OutGeneralEdges;
+        }
+
+        public int OutGeneralEdgeCount(TVertex v)
+        {
+            return _typedEdgeCollections[v].OutGeneralEdges.Count;
+        }
+
+        #endregion General Edges
+
+        #region IHierarchicalBidirectionalGraph<TVertex,TEdge> Members
+
+        public IEnumerable<TEdge> HierarchicalEdges => Vertices.SelectMany(OutHierarchicalEdges);
+
+        public int HierarchicalEdgeCount => Vertices.Sum(v => InHierarchicalEdgeCount(v));
+
+        public IEnumerable<TEdge> GeneralEdges => Vertices.SelectMany(OutGeneralEdges);
+
+        public int GeneralEdgeCount => Vertices.Sum(v => InGeneralEdgeCount(v));
+
+        #endregion IHierarchicalBidirectionalGraph<TVertex,TEdge> Members
+    }
 }

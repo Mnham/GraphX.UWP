@@ -1,5 +1,6 @@
-using System;
 using GraphX.Measure;
+
+using System;
 
 namespace GraphX.Logic.Algorithms.EdgeRouting
 {
@@ -31,16 +32,13 @@ namespace GraphX.Logic.Algorithms.EdgeRouting
 
         public static float Length(Point p)
         {
-            return (float)Math.Sqrt(p.X * p.X + p.Y * p.Y);
+            return (float)Math.Sqrt((p.X * p.X) + (p.Y * p.Y));
         }
 
         public static Point Normalize(Point p)
         {
             float l = Length(p);
-            if (l == 0)
-                return p;
-            else
-                return Multiply(p, 1f / l);
+            return l == 0 ? p : Multiply(p, 1f / l);
         }
 
         public static float Angle(Point p1, Point p2, Point q1, Point q2)

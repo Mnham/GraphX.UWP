@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
-using GraphX.Measure;
+﻿using GraphX.Measure;
+
 using QuikGraph;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -16,7 +18,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         public LayoutMode Mode { get; private set; }
 
-        public LayoutContext( TGraph graph, IDictionary<TVertex, Point> positions, IDictionary<TVertex, Size> sizes, LayoutMode mode )
+        public LayoutContext(TGraph graph, IDictionary<TVertex, Point> positions, IDictionary<TVertex, Size> sizes, LayoutMode mode)
         {
             Graph = graph;
             Positions = positions;

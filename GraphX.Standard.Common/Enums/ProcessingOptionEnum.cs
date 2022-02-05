@@ -9,10 +9,12 @@
         /// Process object as intended
         /// </summary>
         Default,
+
         /// <summary>
         /// Freeze object so its position will remain intact for all subsequent calculations.
         /// </summary>
         Freeze,
+
         /// <summary>
         /// Exclude object from all consequent calulations
         /// </summary>

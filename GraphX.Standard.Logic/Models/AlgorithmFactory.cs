@@ -1,13 +1,15 @@
-﻿using System.Collections.Generic;
-using GraphX.Measure;
-using GraphX.Common;
+﻿using GraphX.Common;
 using GraphX.Common.Enums;
 using GraphX.Common.Interfaces;
 using GraphX.Logic.Algorithms;
 using GraphX.Logic.Algorithms.EdgeRouting;
 using GraphX.Logic.Algorithms.LayoutAlgorithms;
 using GraphX.Logic.Algorithms.OverlapRemoval;
+using GraphX.Measure;
+
 using QuikGraph;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Models
 {
@@ -17,6 +19,7 @@ namespace GraphX.Logic.Models
         where TGraph : class, IMutableBidirectionalGraph<TVertex, TEdge>, new()
     {
         #region Layout factory
+
         /// <summary>
         /// Generate and initialize layout algorithm
         /// </summary>
@@ -27,9 +30,17 @@ namespace GraphX.Logic.Models
         /// <param name="parameters">Optional algorithm parameters</param>
         public ILayoutAlgorithm<TVertex, TEdge, TGraph> CreateLayoutAlgorithm(LayoutAlgorithmTypeEnum newAlgorithmType, TGraph iGraph, IDictionary<TVertex, Point> positions = null, IDictionary<TVertex, Size> sizes = null, ILayoutParameters parameters = null)
         {
-            if (iGraph == null) return null;
-            if (parameters == null) parameters = CreateLayoutParameters(newAlgorithmType);
-            var graph = iGraph.CopyToGraph<TGraph, TVertex, TEdge>();
+            if (iGraph == null)
+            {
+                return null;
+            }
+
+            if (parameters == null)
+            {
+                parameters = CreateLayoutParameters(newAlgorithmType);
+            }
+
+            TGraph graph = iGraph.CopyToGraph<TGraph, TVertex, TEdge>();
 
             graph.RemoveEdgeIf(a => a.SkipProcessing == ProcessingOptionEnum.Exclude);
             graph.RemoveVertexIf(a => a.SkipProcessing == ProcessingOptionEnum.Exclude);
@@ -38,27 +49,37 @@ namespace GraphX.Logic.Models
             {
                 case LayoutAlgorithmTypeEnum.Tree:
                     return new SimpleTreeLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, positions, sizes, parameters as SimpleTreeLayoutParameters);
+
                 case LayoutAlgorithmTypeEnum.SimpleRandom:
                     return new RandomLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, positions, parameters as RandomLayoutAlgorithmParams);
+
                 case LayoutAlgorithmTypeEnum.Circular:
                     return new CircularLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, positions, sizes, parameters as CircularLayoutParameters);
+
                 case LayoutAlgorithmTypeEnum.FR:
                     return new FRLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, positions, parameters as FRLayoutParametersBase);
+
                 case LayoutAlgorithmTypeEnum.BoundedFR:
                     return new FRLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, positions, parameters as BoundedFRLayoutParameters);
+
                 case LayoutAlgorithmTypeEnum.KK:
                     return new KKLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, positions, parameters as KKLayoutParameters);
+
                 case LayoutAlgorithmTypeEnum.ISOM:
                     return new ISOMLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, positions, parameters as ISOMLayoutParameters);
+
                 case LayoutAlgorithmTypeEnum.LinLog:
                     return new LinLogLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, positions, parameters as LinLogLayoutParameters);
+
                 case LayoutAlgorithmTypeEnum.EfficientSugiyama:
                     return new EfficientSugiyamaLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, parameters as EfficientSugiyamaLayoutParameters, positions, sizes);
+
                 case LayoutAlgorithmTypeEnum.Sugiyama:
                     return new SugiyamaLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, sizes, positions, parameters as SugiyamaLayoutParameters,
-                                                                                   e => (e is TypedEdge<TVertex>
+                                                                                   e => e is TypedEdge<TVertex>
                                                                                         ? (e as TypedEdge<TVertex>).Type
-                                                                                        : EdgeTypes.Hierarchical));
+                                                                                        : EdgeTypes.Hierarchical);
+
                 case LayoutAlgorithmTypeEnum.CompoundFDP:
                     return new CompoundFDPLayoutAlgorithm<TVertex, TEdge, TGraph>(graph, sizes, new Dictionary<TVertex, Thickness>(), new Dictionary<TVertex, CompoundVertexInnerLayoutType>(),
                         positions, parameters as CompoundFDPLayoutParameters);
@@ -80,28 +101,38 @@ namespace GraphX.Logic.Models
             {
                 case LayoutAlgorithmTypeEnum.Tree:
                     return new SimpleTreeLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.Circular:
                     return new CircularLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.FR:
                     return new FreeFRLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.BoundedFR:
                     return new BoundedFRLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.KK:
                     return new KKLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.ISOM:
                     return new ISOMLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.LinLog:
                     return new LinLogLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.EfficientSugiyama:
                     return new EfficientSugiyamaLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.Sugiyama:
                     return new SugiyamaLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.CompoundFDP:
                     return new CompoundFDPLayoutParameters();
+
                 case LayoutAlgorithmTypeEnum.SimpleRandom:
                     return new RandomLayoutAlgorithmParams();
-               // case LayoutAlgorithmTypeEnum.BalloonTree:
-               //     return new BalloonTreeLayoutParameters();
+                // case LayoutAlgorithmTypeEnum.BalloonTree:
+                //     return new BalloonTreeLayoutParameters();
                 default:
                     return null;
             }
@@ -122,6 +153,7 @@ namespace GraphX.Logic.Models
                 case LayoutAlgorithmTypeEnum.CompoundFDP:
                 case LayoutAlgorithmTypeEnum.SimpleRandom:
                     return true;
+
                 default:
                     return false;
             }
@@ -142,13 +174,14 @@ namespace GraphX.Logic.Models
         /// <param name="algorithmType">Layout algorithm type</param>
         public bool NeedOverlapRemoval(LayoutAlgorithmTypeEnum algorithmType)
         {
-            return (algorithmType != LayoutAlgorithmTypeEnum.Sugiyama
+            return algorithmType != LayoutAlgorithmTypeEnum.Sugiyama
                 && algorithmType != LayoutAlgorithmTypeEnum.EfficientSugiyama
                 && algorithmType != LayoutAlgorithmTypeEnum.Circular
                 && algorithmType != LayoutAlgorithmTypeEnum.Tree
-                /*&& algorithmType != LayoutAlgorithmTypeEnum.BalloonTree*/);
+                /*&& algorithmType != LayoutAlgorithmTypeEnum.BalloonTree*/;
         }
-        #endregion
+
+        #endregion Layout factory
 
         #region OverlapRemoval factory
 
@@ -170,15 +203,20 @@ namespace GraphX.Logic.Models
         public IOverlapRemovalAlgorithm<TVertex> CreateOverlapRemovalAlgorithm(OverlapRemovalAlgorithmTypeEnum newAlgorithmType, IDictionary<TVertex, Rect> rectangles, IOverlapRemovalParameters parameters = null)
         {
             //if (Rectangles == null) return null;
-            if (parameters == null) parameters = CreateOverlapRemovalParameters(newAlgorithmType);
+            if (parameters == null)
+            {
+                parameters = CreateOverlapRemovalParameters(newAlgorithmType);
+            }
 
             switch (newAlgorithmType)
             {
                 case OverlapRemovalAlgorithmTypeEnum.FSA:
                     return new FSAAlgorithm<TVertex>(rectangles, parameters is OverlapRemovalParameters ? parameters : new OverlapRemovalParameters());
+
                 case OverlapRemovalAlgorithmTypeEnum.OneWayFSA:
-                    
+
                     return new OneWayFSAAlgorithm<TVertex>(rectangles, parameters is OneWayFSAParameters ? parameters as OneWayFSAParameters : new OneWayFSAParameters());
+
                 default:
                     return null;
             }
@@ -186,7 +224,7 @@ namespace GraphX.Logic.Models
 
         public IOverlapRemovalAlgorithm<T> CreateFSAA<T>(IDictionary<T, Rect> rectangles, float horGap, float vertGap) where T : class
         {
-            return new FSAAlgorithm<T>(rectangles, new OverlapRemovalParameters { HorizontalGap = horGap, VerticalGap = vertGap});
+            return new FSAAlgorithm<T>(rectangles, new OverlapRemovalParameters { HorizontalGap = horGap, VerticalGap = vertGap });
         }
 
         /// <summary>
@@ -196,7 +234,7 @@ namespace GraphX.Logic.Models
         /// <typeparam name="TParam">Algorithm parameters</typeparam>
         /// <param name="horGap">Horizontal gap setting</param>
         /// <param name="vertGap">Vertical gap setting</param>
-        public IOverlapRemovalAlgorithm<T, IOverlapRemovalParameters> CreateFSAA<T>(float horGap, float vertGap) where T : class 
+        public IOverlapRemovalAlgorithm<T, IOverlapRemovalParameters> CreateFSAA<T>(float horGap, float vertGap) where T : class
         {
             return new FSAAlgorithm<T, IOverlapRemovalParameters>(null, new OverlapRemovalParameters { HorizontalGap = horGap, VerticalGap = vertGap });
         }
@@ -211,33 +249,42 @@ namespace GraphX.Logic.Models
             {
                 case OverlapRemovalAlgorithmTypeEnum.FSA:
                     return new OverlapRemovalParameters();
+
                 case OverlapRemovalAlgorithmTypeEnum.OneWayFSA:
                     return new OneWayFSAParameters();
+
                 default:
                     return null;
             }
         }
 
-
-        #endregion
+        #endregion OverlapRemoval factory
 
         #region Edge Routing factory
+
         public IExternalEdgeRouting<TVertex, TEdge> CreateEdgeRoutingAlgorithm(EdgeRoutingAlgorithmTypeEnum newAlgorithmType, Rect graphArea, TGraph iGraph, IDictionary<TVertex, Point> positions, IDictionary<TVertex, Rect> rectangles, IEdgeRoutingParameters parameters = null)
         {
             //if (Rectangles == null) return null;
-            if (parameters == null) parameters = CreateEdgeRoutingParameters(newAlgorithmType);
-			var graph = iGraph.CopyToGraph<TGraph, TVertex, TEdge>();
+            if (parameters == null)
+            {
+                parameters = CreateEdgeRoutingParameters(newAlgorithmType);
+            }
+
+            TGraph graph = iGraph.CopyToGraph<TGraph, TVertex, TEdge>();
             graph.RemoveEdgeIf(a => a.SkipProcessing == ProcessingOptionEnum.Exclude);
             graph.RemoveVertexIf(a => a.SkipProcessing == ProcessingOptionEnum.Exclude);
 
             switch (newAlgorithmType)
             {
                 case EdgeRoutingAlgorithmTypeEnum.SimpleER:
-                    return new SimpleEdgeRouting<TVertex, TEdge,  TGraph>(graph, positions, rectangles, parameters);
+                    return new SimpleEdgeRouting<TVertex, TEdge, TGraph>(graph, positions, rectangles, parameters);
+
                 case EdgeRoutingAlgorithmTypeEnum.Bundling:
                     return new BundleEdgeRouting<TVertex, TEdge, TGraph>(graphArea, graph, positions, rectangles, parameters);
+
                 case EdgeRoutingAlgorithmTypeEnum.PathFinder:
                     return new PathFinderEdgeRouting<TVertex, TEdge, TGraph>(graph, positions, rectangles, parameters);
+
                 default:
                     return null;
             }
@@ -249,14 +296,18 @@ namespace GraphX.Logic.Models
             {
                 case EdgeRoutingAlgorithmTypeEnum.SimpleER:
                     return new SimpleERParameters();
+
                 case EdgeRoutingAlgorithmTypeEnum.Bundling:
                     return new BundleEdgeRoutingParameters();
+
                 case EdgeRoutingAlgorithmTypeEnum.PathFinder:
                     return new PathFinderEdgeRoutingParameters();
+
                 default:
                     return null;
             }
         }
-        #endregion
+
+        #endregion Edge Routing factory
     }
 }

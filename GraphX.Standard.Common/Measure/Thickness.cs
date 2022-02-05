@@ -9,25 +9,19 @@
 
         public Thickness(double left, double top, double right, double bottom)
         {
-            Left = left; Right = right;
-            Top = top; Bottom = bottom;
+            Left = left;
+            Right = right;
+            Top = top;
+            Bottom = bottom;
         }
 
-        public static bool operator !=(Thickness t1, Thickness t2)
-        {
-            return !(t1.Left == t2.Left && t1.Top == t2.Top && t1.Right == t2.Right && t1.Bottom == t2.Bottom);
-        }
+        public static bool operator !=(Thickness t1, Thickness t2) => !(t1.Left == t2.Left && t1.Top == t2.Top && t1.Right == t2.Right && t1.Bottom == t2.Bottom);
 
-        public static bool operator ==(Thickness t1, Thickness t2)
-        {
-            return t1.Left == t2.Left && t1.Top == t2.Top && t1.Right == t2.Right && t1.Bottom == t2.Bottom;
-        }
+        public static bool operator ==(Thickness t1, Thickness t2) => t1.Left == t2.Left && t1.Top == t2.Top && t1.Right == t2.Right && t1.Bottom == t2.Bottom;
 
         public override bool Equals(object o)
         {
-            if (!(o is Thickness))
-                return false;
-            return Equals(this, (Thickness)o);
+            return o is Thickness thickness && Equals(this, thickness);
         }
 
         public bool Equals(Thickness value)
@@ -37,7 +31,7 @@
 
         public override int GetHashCode()
         {
-            return (Left.GetHashCode() ^ Top.GetHashCode() ^ Right.GetHashCode() ^ Bottom.GetHashCode());
+            return Left.GetHashCode() ^ Top.GetHashCode() ^ Right.GetHashCode() ^ Bottom.GetHashCode();
         }
     }
 }

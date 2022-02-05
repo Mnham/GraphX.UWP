@@ -15,10 +15,12 @@
         KK,
         LinLog,
         Tree,
+
         /// <summary>
         /// Simple random vertices layout
         /// </summary>
         SimpleRandom,
+
         //BalloonTree
         /// <summary>
         /// Do not perform any layout. Layout will be manualy managed by end-user.

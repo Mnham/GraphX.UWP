@@ -2,10 +2,10 @@
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
-    public class RandomLayoutAlgorithmParams: LayoutParametersBase
+    public class RandomLayoutAlgorithmParams : LayoutParametersBase
     {
         /// <summary>
-        /// Gets or sets layout bounds 
+        /// Gets or sets layout bounds
         /// </summary>
         public Rect Bounds { get; set; }
 

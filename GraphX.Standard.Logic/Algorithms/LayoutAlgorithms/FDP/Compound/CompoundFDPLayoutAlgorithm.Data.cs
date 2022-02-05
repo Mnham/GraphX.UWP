@@ -1,8 +1,10 @@
-﻿using System;
+﻿using GraphX.Measure;
+
+using QuikGraph;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using GraphX.Measure;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -35,10 +37,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private readonly IList<HashSet<TVertex>> _levels =
             new List<HashSet<TVertex>>();
 
-        public IList<HashSet<TVertex>> Levels
-        {
-            get { return _levels; }
-        }
+        public IList<HashSet<TVertex>> Levels => _levels;
 
         private class RemovedTreeNodeData
         {
@@ -66,7 +65,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             new HashSet<TEdge>();
 
         /// <summary>
-        /// Temporary dictionary for the inner canvas sizes (do not depend on this!!! inside 
+        /// Temporary dictionary for the inner canvas sizes (do not depend on this!!! inside
         /// the algorithm, use the vertexData objects instead).
         /// </summary>
         //private IDictionary<TVertex, Size> _innerCanvasSizes;
@@ -101,6 +100,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 CompoundVertexInnerLayoutType.Automatic);
 
         #region Constructors
+
         public CompoundFDPLayoutAlgorithm(
             TGraph visitedGraph,
             IDictionary<TVertex, Size> vertexSizes,
@@ -124,11 +124,16 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             _layoutTypes = layoutTypes;
 
             if (VisitedGraph is ICompoundGraph<TVertex, TEdge>)
+            {
                 _compoundGraph = new CompoundGraph<TVertex, TEdge>(VisitedGraph as ICompoundGraph<TVertex, TEdge>);
+            }
             else
+            {
                 _compoundGraph = new CompoundGraph<TVertex, TEdge>(VisitedGraph);
+            }
         }
-        #endregion
+
+        #endregion Constructors
 
         public int LevelOfVertex(TVertex vertex)
         {
@@ -137,17 +142,11 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         #region ICompoundLayoutAlgorithm<TVertex,TEdge,TGraph> Members
 
-        public IDictionary<TVertex, Size> InnerCanvasSizes
-        {
-            get
-            {
-                return _compoundVertexDatas.ToDictionary(
+        public IDictionary<TVertex, Size> InnerCanvasSizes => _compoundVertexDatas.ToDictionary(
                     kvp => kvp.Key,
                     kvp => kvp.Value.InnerCanvasSize);
-            }
-        }
 
-        #endregion
+        #endregion ICompoundLayoutAlgorithm<TVertex,TEdge,TGraph> Members
 
         #region Nested type: CompoundVertexData
 
@@ -194,7 +193,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// </summary>
             public Size InnerCanvasSize
             {
-                get { return _innerCanvasSize; }
+                get => _innerCanvasSize;
                 set
                 {
                     _innerCanvasSize = value;
@@ -208,10 +207,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// <summary>
             /// The overall size of the vertex (inner canvas size + borders + ...).
             /// </summary>
-            public override Size Size
-            {
-                get { return _size; }
-            }
+            public override Size Size => _size;
 
             /// <summary>
             /// Modifies the position of the children with the given
@@ -220,7 +216,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// <param name="force">The vector of the position modification.</param>
             private void PropogateToChildren(Vector force)
             {
-                foreach (var child in _children)
+                foreach (VertexData child in _children)
                 {
                     child.ApplyForce(force);
                 }
@@ -228,11 +224,8 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
             public ICollection<VertexData> Children
             {
-                get { return _children; }
-                set
-                {
-                    _children = value;
-                }
+                get => _children;
+                set => _children = value;
             }
 
             internal override void ApplyForce(Vector force)
@@ -244,20 +237,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
             public Point InnerCanvasCenter
             {
-                get
-                {
-                    return new Point(
+                get => new Point(
                         Position.X - Size.Width / 2 + Borders.Left + InnerCanvasSize.Width / 2,
                         Position.Y - Size.Height / 2 + Borders.Top + InnerCanvasSize.Height / 2
                         );
-                }
-                set
-                {
-                    Position = new Point(
+                set => Position = new Point(
                         value.X - InnerCanvasSize.Width / 2 - Borders.Left + Size.Width / 2,
                         value.Y - InnerCanvasSize.Height / 2 - Borders.Top + Size.Height / 2
                         );
-                }
             }
 
             public void RecalculateBounds()
@@ -270,7 +257,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
                 Point topLeft = new Point(double.PositiveInfinity, double.PositiveInfinity);
                 Point bottomRight = new Point(double.NegativeInfinity, double.NegativeInfinity);
-                foreach (var child in _children)
+                foreach (VertexData child in _children)
                 {
                     topLeft.X = Math.Min(topLeft.X, child.Position.X - child.Size.Width / 2);
                     topLeft.Y = Math.Min(topLeft.Y, child.Position.Y - child.Size.Height / 2);
@@ -283,7 +270,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             }
         }
 
-        #endregion
+        #endregion Nested type: CompoundVertexData
 
         #region Nested type: SimpleVertexData
 
@@ -303,10 +290,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// <summary>
             /// Gets the actual size of the vertex (inner size + border + anything else...).
             /// </summary>
-            public override Size Size
-            {
-                get { return _size; }
-            }
+            public override Size Size => _size;
 
             internal override void ApplyForce(Vector force)
             {
@@ -314,7 +298,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             }
         }
 
-        #endregion
+        #endregion Nested type: SimpleVertexData
 
         #region Nested type: VertexData
 
@@ -327,6 +311,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// Gets the vertex which is wrapped by this object.
             /// </summary>
             public readonly TVertex Vertex;
+
             public CompoundVertexData Parent;
             private Vector _springForce;
             private Vector _repulsionForce;
@@ -348,16 +333,13 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// <summary>
             /// If the vertex is fixed (cannot be moved), that's it's parent
             /// that could be moved (if there's any).
-            /// 
+            ///
             /// This property can only be set once.
             /// </summary>
             public VertexData MovableParent
             {
-                get { return _movableParent; }
-                set
-                {
-                    _movableParent = value;
-                }
+                get => _movableParent;
+                set => _movableParent = value;
             }
 
             /// <summary>
@@ -386,12 +368,17 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// </summary>
             public Vector SpringForce
             {
-                get { return IsFixedToParent ? new Vector() : _springForce; }
+                get => IsFixedToParent ? new Vector() : _springForce;
                 set
                 {
                     if (IsFixedToParent)
+                    {
                         _springForce = new Vector();
-                    else _springForce = value;
+                    }
+                    else
+                    {
+                        _springForce = value;
+                    }
                 }
             }
 
@@ -400,12 +387,17 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// </summary>
             public Vector RepulsionForce
             {
-                get { return IsFixedToParent ? new Vector() : _repulsionForce; }
+                get => IsFixedToParent ? new Vector() : _repulsionForce;
                 set
                 {
                     if (IsFixedToParent)
+                    {
                         _repulsionForce = new Vector();
-                    else _repulsionForce = value;
+                    }
+                    else
+                    {
+                        _repulsionForce = value;
+                    }
                 }
             }
 
@@ -414,12 +406,17 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// </summary>
             public Vector GravitationForce
             {
-                get { return IsFixedToParent ? new Vector() : _gravitationForce; }
+                get => IsFixedToParent ? new Vector() : _gravitationForce;
                 set
                 {
                     if (IsFixedToParent)
+                    {
                         _gravitationForce = new Vector();
-                    else _gravitationForce = value;
+                    }
+                    else
+                    {
+                        _gravitationForce = value;
+                    }
                 }
             }
 
@@ -428,19 +425,25 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             /// </summary>
             public Vector ApplicationForce
             {
-                get { return IsFixedToParent ? new Vector() : _applicationForce; }
+                get => IsFixedToParent ? new Vector() : _applicationForce;
                 set
                 {
                     if (IsFixedToParent)
+                    {
                         _applicationForce = new Vector();
-                    else _applicationForce = value;
+                    }
+                    else
+                    {
+                        _applicationForce = value;
+                    }
                 }
             }
 
             internal abstract void ApplyForce(Vector force);
+
             public Vector ApplyForce(double limit)
             {
-                var force = _springForce
+                Vector force = _springForce
                     + _repulsionForce
                     + _gravitationForce
                     + _applicationForce
@@ -449,10 +452,15 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 Parent._childrenForce += force;
 
                 if (force.Length > limit)
+                {
                     force *= (limit / force.Length);
+                }
+
                 force += 0.7 * _previousForce;
                 if (force.Length > limit)
+                {
                     force *= (limit / force.Length);
+                }
 
                 ApplyForce(force);
                 _springForce = new Vector();
@@ -466,6 +474,6 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             }
         }
 
-        #endregion
+        #endregion Nested type: VertexData
     }
 }

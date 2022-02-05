@@ -1,11 +1,13 @@
-﻿using System;
+﻿using GraphX.Common.Exceptions;
+using GraphX.Measure;
+
+using QuikGraph;
+using QuikGraph.Algorithms.Search;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using GraphX.Measure;
-using GraphX.Common.Exceptions;
-using QuikGraph;
-using QuikGraph.Algorithms.Search;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -16,12 +18,12 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
     {
         #region Private fields, constants
 
-        SoftMutableHierarchicalGraph<SugiVertex, SugiEdge> _graph;
+        private SoftMutableHierarchicalGraph<SugiVertex, SugiEdge> _graph;
+        private readonly Func<TEdge, EdgeTypes> _edgePredicate;
+        private readonly VertexLayerCollection _layers = new VertexLayerCollection();
 
-        readonly Func<TEdge, EdgeTypes> _edgePredicate;
-        readonly VertexLayerCollection _layers = new VertexLayerCollection();
         //private int _iteration;
-        double _statusInPercent;
+        private double _statusInPercent;
 
         private const int PERCENT_OF_PREPARATION = 5;
         private const int PERCENT_OF_SUGIYAMA = 60;
@@ -36,31 +38,33 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private const string GENERAL_EDGES_TAG = "GeneralEdges";
         private const string GENERAL_EDGES_BETWEEN_DIFFERENT_LAYERS_TAG = "GeneralEdgesBetweenDifferentLayers";
         private const string LONG_EDGES_TAG = "LongEdges"; //long edges will be replaced with dummy vertices
-        #endregion
+
+        #endregion Private fields, constants
 
         public IDictionary<TEdge, Point[]> EdgeRoutes { get; private set; }
 
         #region Constructors
+
         public SugiyamaLayoutAlgorithm(
             TGraph visitedGraph,
             IDictionary<TVertex, Size> vertexSizes,
             IDictionary<TVertex, Point> vertexPositions,
             SugiyamaLayoutParameters parameters,
-            Func<TEdge, EdgeTypes> edgePredicate )
-            : base( visitedGraph, vertexPositions, parameters )
+            Func<TEdge, EdgeTypes> edgePredicate)
+            : base(visitedGraph, vertexPositions, parameters)
         {
             _edgePredicate = edgePredicate;
             EdgeRoutes = new Dictionary<TEdge, Point[]>();
 
-            ConvertGraph( vertexSizes );
+            ConvertGraph(vertexSizes);
         }
 
         public SugiyamaLayoutAlgorithm(
             TGraph visitedGraph,
             IDictionary<TVertex, Size> vertexSizes,
             SugiyamaLayoutParameters parameters,
-            Func<TEdge, EdgeTypes> edgePredicate )
-            : this( visitedGraph, vertexSizes, null, parameters, edgePredicate )
+            Func<TEdge, EdgeTypes> edgePredicate)
+            : this(visitedGraph, vertexSizes, null, parameters, edgePredicate)
         {
         }
 
@@ -68,89 +72,95 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// Converts the VisitedGraph to the inner type (which is a mutable graph representation).
         /// Wraps the vertices, converts the edges.
         /// </summary>
-        protected void ConvertGraph( IDictionary<TVertex, Size> vertexSizes )
+        protected void ConvertGraph(IDictionary<TVertex, Size> vertexSizes)
         {
             //creating the graph with the new type
-            _graph = new SoftMutableHierarchicalGraph<SugiVertex, SugiEdge>( true );
+            _graph = new SoftMutableHierarchicalGraph<SugiVertex, SugiEdge>(true);
 
-            var vertexDict = new Dictionary<TVertex, SugiVertex>();
+            Dictionary<TVertex, SugiVertex> vertexDict = new Dictionary<TVertex, SugiVertex>();
 
             //wrapping the vertices
-            foreach ( TVertex v in VisitedGraph.Vertices )
+            foreach (TVertex v in VisitedGraph.Vertices)
             {
-                var size = vertexSizes[v];
+                Size size = vertexSizes[v];
                 size.Height += Parameters.VerticalGap;
                 size.Width += Parameters.HorizontalGap;
-                var wrapped = new SugiVertex( v, size );
+                SugiVertex wrapped = new SugiVertex(v, size);
 
-                _graph.AddVertex( wrapped );
+                _graph.AddVertex(wrapped);
                 vertexDict[v] = wrapped;
             }
 
             //creating the new edges
-            foreach ( TEdge e in VisitedGraph.Edges )
+            foreach (TEdge e in VisitedGraph.Edges)
             {
-                var wrapped = new SugiEdge( e, vertexDict[e.Source], vertexDict[e.Target], _edgePredicate( e ) );
-                _graph.AddEdge( wrapped );
+                SugiEdge wrapped = new SugiEdge(e, vertexDict[e.Source], vertexDict[e.Target], _edgePredicate(e));
+                _graph.AddEdge(wrapped);
             }
         }
-        #endregion
+
+        #endregion Constructors
 
         #region Filters - used in the preparation phase
+
         /// <summary>
         /// Removes the cycles from the given graph.
         /// It reverts some edges, so the cycles disappeares.
         /// </summary>
         private void FilterCycles()
         {
-            var cycleEdges = new List<SugiEdge>();
-            var dfsAlgo = new DepthFirstSearchAlgorithm<SugiVertex, SugiEdge>( _graph );
+            List<SugiEdge> cycleEdges = new List<SugiEdge>();
+            DepthFirstSearchAlgorithm<SugiVertex, SugiEdge> dfsAlgo = new DepthFirstSearchAlgorithm<SugiVertex, SugiEdge>(_graph);
             dfsAlgo.BackEdge += cycleEdges.Add;
             //non-tree edges selected
             dfsAlgo.Compute();
 
             //put back the reverted ones
-            foreach ( var edge in cycleEdges )
+            foreach (SugiEdge edge in cycleEdges)
             {
-                _graph.RemoveEdge( edge );
+                _graph.RemoveEdge(edge);
 
-                var revertEdge = new SugiEdge( edge.Original, edge.Target, edge.Source, edge.Type );
-                _graph.AddEdge( revertEdge );
+                SugiEdge revertEdge = new SugiEdge(edge.Original, edge.Target, edge.Source, edge.Type);
+                _graph.AddEdge(revertEdge);
             }
         }
 
-        protected static void FilterParallelEdges<TVertexType, TEdgeType>( ISoftMutableGraph<TVertexType, TEdgeType> graph )
+        protected static void FilterParallelEdges<TVertexType, TEdgeType>(ISoftMutableGraph<TVertexType, TEdgeType> graph)
             where TEdgeType : class, IEdge<TVertexType>
         {
-            foreach ( TVertexType v in graph.Vertices )
+            foreach (TVertexType v in graph.Vertices)
             {
-                var neighbours = new HashSet<TVertexType>();
-                foreach ( var e in graph.OutEdges( v ).ToList() )
+                HashSet<TVertexType> neighbours = new HashSet<TVertexType>();
+                foreach (TEdgeType e in graph.OutEdges(v).ToList())
                 {
-                    if ( !neighbours.Add( e.Target ) )
+                    if (!neighbours.Add(e.Target))
+                    {
                         //target already a neighbour, it is a parallel edge
-                        graph.HideEdge( e, PARALLEL_EDGES_TAG );
+                        graph.HideEdge(e, PARALLEL_EDGES_TAG);
+                    }
                 }
-                foreach ( var e in graph.InEdges( v ).ToList() )
+                foreach (TEdgeType e in graph.InEdges(v).ToList())
                 {
-                    if ( !neighbours.Add( e.Source ) )
+                    if (!neighbours.Add(e.Source))
+                    {
                         //source already a neighbour, it is a parallel edge
-                        graph.HideEdge( e, PARALLEL_EDGES_TAG );
+                        graph.HideEdge(e, PARALLEL_EDGES_TAG);
+                    }
                 }
             }
         }
 
-        protected static void FilterIsolatedVertices<TVertexType, TEdgeType>( ISoftMutableGraph<TVertexType, TEdgeType> graph )
+        protected static void FilterIsolatedVertices<TVertexType, TEdgeType>(ISoftMutableGraph<TVertexType, TEdgeType> graph)
             where TEdgeType : class, IEdge<TVertexType>
         {
-            graph.HideVerticesIf( v => graph.Degree( v ) == 0, ISOLATED_VERTICES_TAG );
+            graph.HideVerticesIf(v => graph.Degree(v) == 0, ISOLATED_VERTICES_TAG);
         }
 
-        protected static void FilterLoops<TVertexType, TEdgeType>( ISoftMutableGraph<TVertexType, TEdgeType> graph )
+        protected static void FilterLoops<TVertexType, TEdgeType>(ISoftMutableGraph<TVertexType, TEdgeType> graph)
             where TEdgeType : class, IEdge<TVertexType>
             where TVertexType : class
         {
-            graph.HideEdgesIf( e => e.Source == e.Target, LOOPS_TAG );
+            graph.HideEdgesIf(e => e.Source == e.Target, LOOPS_TAG);
         }
 
         /// <summary>
@@ -160,7 +170,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         protected void FiltersAndRemovals()
         {
             //hide every edge but hierarchical ones
-            _graph.HideEdges( _graph.GeneralEdges, GENERAL_EDGES_TAG );
+            _graph.HideEdges(_graph.GeneralEdges, GENERAL_EDGES_TAG);
 
             //Remove the cycles from the graph
             FilterCycles();
@@ -169,62 +179,69 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             //FilterParallelEdges( _graph );
 
             //remove every isolated vertex
-            FilterIsolatedVertices( _graph );
+            FilterIsolatedVertices(_graph);
 
             //filter loops - edges with source = target
-            FilterLoops( _graph );
+            FilterLoops(_graph);
         }
-        #endregion
+
+        #endregion Filters - used in the preparation phase
 
         /// <summary>
         /// Creates the layering of the graph. (Assigns every vertex to a layer.)
         /// </summary>
         protected void AssignLayers()
         {
-            var lts = new LayeredTopologicalSortAlgorithm<SugiVertex, SugiEdge>( _graph );
+            LayeredTopologicalSortAlgorithm<SugiVertex, SugiEdge> lts = new LayeredTopologicalSortAlgorithm<SugiVertex, SugiEdge>(_graph);
             lts.Compute();
 
-            for ( int i = 0; i < lts.LayerCount; i++ )
+            for (int i = 0; i < lts.LayerCount; i++)
             {
-                var vl = new VertexLayer( _graph, i, lts.Layers[i].ToList() );
-                _layers.Add( vl );
+                VertexLayer vl = new VertexLayer(_graph, i, lts.Layers[i].ToList());
+                _layers.Add(vl);
             }
         }
 
         #region Preparation for Sugiyama
+
         /// <summary>
-        /// Minimizes the long of the hierarchical edges by 
-        /// putting down the vertices to the layer above  
+        /// Minimizes the long of the hierarchical edges by
+        /// putting down the vertices to the layer above
         /// its descendants.
         /// </summary>
         protected void MinimizeHierarchicalEdgeLong(CancellationToken cancellationToken)
         {
-            if ( !Parameters.MinimizeHierarchicalEdgeLong )
-                return;
-
-            for ( int i = _layers.Count - 1; i >= 0; i-- )
+            if (!Parameters.MinimizeHierarchicalEdgeLong)
             {
-                var layer = _layers[i];
-                foreach ( var v in layer.ToList() )
+                return;
+            }
+
+            for (int i = _layers.Count - 1; i >= 0; i--)
+            {
+                VertexLayer layer = _layers[i];
+                foreach (SugiVertex v in layer.ToList())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if ( _graph.OutHierarchicalEdgeCount( v ) == 0 ) continue;
+                    if (_graph.OutHierarchicalEdgeCount(v) == 0)
+                    {
+                        continue;
+                    }
 
                     //put the vertex above the descendant on the highest layer
-                    int newLayerIndex = _graph.OutHierarchicalEdges( v ).Min( edge => edge.Target.LayerIndex - 1 );
+                    int newLayerIndex = _graph.OutHierarchicalEdges(v).Min(edge => edge.Target.LayerIndex - 1);
 
-                    if ( newLayerIndex != v.LayerIndex )
+                    if (newLayerIndex != v.LayerIndex)
                     {
                         //we're changing layer
-                        layer.Remove( v );
-                        _layers[newLayerIndex].Add( v );
+                        layer.Remove(v);
+                        _layers[newLayerIndex].Add(v);
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Long edges ( span(e) > 1 ) will be replaced by 
+        /// Long edges ( span(e) > 1 ) will be replaced by
         /// span(e) edges (1 edge between every 2 neighbor layer)
         /// and span(e)-1 dummy vertices will be added to graph.
         /// </summary>
@@ -232,20 +249,22 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         {
             //if an edge goes through multiple layers, we split the edge at every layer and insert a dummy node
             //  (only for the hierarchical edges)
-            foreach ( var edge in _graph.HierarchicalEdges.ToArray() )
+            foreach (SugiEdge edge in _graph.HierarchicalEdges.ToArray())
             {
                 int sourceLayerIndex = edge.Source.LayerIndex;
                 int targetLayerIndex = edge.Target.LayerIndex;
 
-                if ( Math.Abs( sourceLayerIndex - targetLayerIndex ) <= 1 )
+                if (Math.Abs(sourceLayerIndex - targetLayerIndex) <= 1)
+                {
                     continue; //span(e) <= 1, not long edge
+                }
 
                 //the edge goes through multiple layers
                 edge.IsLongEdge = true;
-                _graph.HideEdge( edge, LONG_EDGES_TAG );
+                _graph.HideEdge(edge, LONG_EDGES_TAG);
 
                 //sourcelayer must be above the targetlayer
-                if ( targetLayerIndex < sourceLayerIndex )
+                if (targetLayerIndex < sourceLayerIndex)
                 {
                     int c = targetLayerIndex;
                     targetLayerIndex = sourceLayerIndex;
@@ -253,22 +272,24 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 }
 
                 SugiVertex prev = edge.Source;
-                for ( int i = sourceLayerIndex + 1; i <= targetLayerIndex; i++ )
+                for (int i = sourceLayerIndex + 1; i <= targetLayerIndex; i++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     //the last vertex is the Target, the other ones are dummy vertices
                     SugiVertex dummy;
-                    if ( i == targetLayerIndex )
+                    if (i == targetLayerIndex)
+                    {
                         dummy = edge.Target;
+                    }
                     else
                     {
-                        dummy = new SugiVertex( null, new Size( 0, 0 ) );
-                        _graph.AddVertex( dummy );
-                        _layers[i].Add( dummy );
-                        edge.DummyVertices.Add( dummy );
+                        dummy = new SugiVertex(null, new Size(0, 0));
+                        _graph.AddVertex(dummy);
+                        _layers[i].Add(dummy);
+                        edge.DummyVertices.Add(dummy);
                     }
-                    _graph.AddEdge( new SugiEdge( edge.Original, prev, dummy, EdgeTypes.Hierarchical ) );
+                    _graph.AddEdge(new SugiEdge(edge.Original, prev, dummy, EdgeTypes.Hierarchical));
                     prev = dummy;
                 }
             }
@@ -284,53 +305,69 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             MinimizeHierarchicalEdgeLong(cancellationToken);
 
             #region 1) Unhide general edges between vertices participating in the hierarchy
-            var analyze = new HashSet<SugiVertex>();
+
+            HashSet<SugiVertex> analyze = new HashSet<SugiVertex>();
             EdgeAction<SugiVertex, SugiEdge> eeh =
                 edge =>
                 {
-                    analyze.Add( edge.Source );
-                    analyze.Add( edge.Target );
+                    analyze.Add(edge.Source);
+                    analyze.Add(edge.Target);
                 };
             _graph.EdgeUnhidden += eeh;
-            _graph.UnhideEdgesIf( e => e.Type == EdgeTypes.General && _graph.ContainsVertex( e.Source ) && _graph.ContainsVertex( e.Target ) );
+            _graph.UnhideEdgesIf(e => e.Type == EdgeTypes.General && _graph.ContainsVertex(e.Source) && _graph.ContainsVertex(e.Target));
             _graph.EdgeUnhidden -= eeh;
-            #endregion
+
+            #endregion 1) Unhide general edges between vertices participating in the hierarchy
 
             #region 2) Move the vertices with general edges if possible
-            foreach ( var v in analyze )
+
+            foreach (SugiVertex v in analyze)
             {
                 //csak lejjebb lehet rakni
                 //csak akkor, ha nincs hierarchikus kimeno el lefele
                 //a legkozelebbi lehetseges szintre
-                if ( _graph.OutHierarchicalEdgeCount( v ) == 0 )
+                if (_graph.OutHierarchicalEdgeCount(v) == 0)
                 {
                     //az altalanos elek kozul az alattalevok kozul a legkozelebbibre kell rakni
                     int newLayerIndex = _layers.Count;
-                    foreach ( var e in _graph.InGeneralEdges( v ) )
+                    foreach (SugiEdge e in _graph.InGeneralEdges(v))
                     {
                         //nem erdemes tovabb folytatni, lejebb nem kerulhet
-                        if ( newLayerIndex == v.LayerIndex ) break;
-                        if ( e.Source.LayerIndex >= v.LayerIndex && e.Source.LayerIndex < newLayerIndex )
+                        if (newLayerIndex == v.LayerIndex)
+                        {
+                            break;
+                        }
+
+                        if (e.Source.LayerIndex >= v.LayerIndex && e.Source.LayerIndex < newLayerIndex)
+                        {
                             newLayerIndex = e.Source.LayerIndex;
+                        }
                     }
-                    foreach ( var e in _graph.OutGeneralEdges( v ) )
+                    foreach (SugiEdge e in _graph.OutGeneralEdges(v))
                     {
                         //nem erdemes tovabb folytatni, lejebb nem kerulhet
-                        if ( newLayerIndex == v.LayerIndex ) break;
-                        if ( e.Target.LayerIndex >= v.LayerIndex && e.Target.LayerIndex < newLayerIndex )
+                        if (newLayerIndex == v.LayerIndex)
+                        {
+                            break;
+                        }
+
+                        if (e.Target.LayerIndex >= v.LayerIndex && e.Target.LayerIndex < newLayerIndex)
+                        {
                             newLayerIndex = e.Target.LayerIndex;
+                        }
                     }
-                    if ( newLayerIndex < _layers.Count )
+                    if (newLayerIndex < _layers.Count)
                     {
-                        _layers[v.LayerIndex].Remove( v );
-                        _layers[newLayerIndex].Add( v );
+                        _layers[v.LayerIndex].Remove(v);
+                        _layers[newLayerIndex].Add(v);
                     }
                 }
             }
-            #endregion
+
+            #endregion 2) Move the vertices with general edges if possible
 
             // 3) Hide the general edges between different layers
-            _graph.HideEdgesIf( e => ( e.Type == EdgeTypes.General && e.Source.LayerIndex != e.Target.LayerIndex ), GENERAL_EDGES_BETWEEN_DIFFERENT_LAYERS_TAG );
+            _graph.HideEdgesIf(e => (e.Type == EdgeTypes.General && e.Source.LayerIndex != e.Target.LayerIndex), GENERAL_EDGES_BETWEEN_DIFFERENT_LAYERS_TAG);
 
             //replace long edges with more segments and dummy vertices
             ReplaceLongEdges(cancellationToken);
@@ -338,11 +375,13 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             ConstrainWidth();
 
             CopyPositions(cancellationToken);
-            OnIterationEnded( "Preparation of the positions done." );
+            OnIterationEnded("Preparation of the positions done.");
         }
-        #endregion
+
+        #endregion Preparation for Sugiyama
 
         #region Sugiyama Layout
+
         /// <summary>
         /// Sweeps in one direction in the 1st Phase of the Sugiyama's algorithm.
         /// </summary>
@@ -353,50 +392,54 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// <param name="dirty">If this is a dirty sweep</param>
         /// <param name="byRealPosition"></param>
         /// <returns></returns>
-        protected bool SugiyamaPhase1Sweep( int start, int end, int step, BaryCenter baryCenter, bool dirty, bool byRealPosition, CancellationToken cancellationToken )
+        protected bool SugiyamaPhase1Sweep(int start, int end, int step, BaryCenter baryCenter, bool dirty, bool byRealPosition, CancellationToken cancellationToken)
         {
             bool hasOptimization = false;
             CrossCount crossCounting = baryCenter == BaryCenter.Up ? CrossCount.Up : CrossCount.Down;
             bool sourceByMeasure = crossCounting == CrossCount.Down;
-            for ( int i = start; i != end; i += step )
+            for (int i = start; i != end; i += step)
             {
-                var layer = _layers[i];
+                VertexLayer layer = _layers[i];
                 int modifiedCrossing = 0;
                 int originalCrossing = 0;
 
-                if ( !dirty )
+                if (!dirty)
+                {
                     //get the count of the edge crossings
-                    originalCrossing = layer.CalculateCrossCount( crossCounting );
+                    originalCrossing = layer.CalculateCrossCount(crossCounting);
+                }
 
                 //measure the vertices by the given barycenter
-                layer.Measure( baryCenter, byRealPosition );
+                layer.Measure(baryCenter, byRealPosition);
 
-                if ( !dirty )
+                if (!dirty)
+                {
                     //get the modified crossing count
-                    modifiedCrossing = layer.CalculateCrossCount( crossCounting, sourceByMeasure, !sourceByMeasure );
+                    modifiedCrossing = layer.CalculateCrossCount(crossCounting, sourceByMeasure, !sourceByMeasure);
+                }
 
-                if ( modifiedCrossing < originalCrossing || dirty )
+                if (modifiedCrossing < originalCrossing || dirty)
                 {
                     layer.SortByMeasure();
                     hasOptimization = true;
                 }
 
-                if ( byRealPosition )
+                if (byRealPosition)
                 {
-                    HorizontalPositionAssignmentOnLayer( i, baryCenter, cancellationToken );
-                    CopyPositionsSilent( false );
+                    HorizontalPositionAssignmentOnLayer(i, baryCenter, cancellationToken);
+                    CopyPositionsSilent(false);
                 }
                 else
                 {
                     CopyPositions(cancellationToken);
                 }
-                OnIterationEnded( " Phase 1 sweepstep finished [" + baryCenter + "-barycentering on layer " + i + "]" );
+                OnIterationEnded(" Phase 1 sweepstep finished [" + baryCenter + "-barycentering on layer " + i + "]");
             }
             return hasOptimization;
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="start"></param>
         /// <param name="end"></param>
@@ -405,85 +448,94 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// <param name="byRealPosition"></param>
         /// <returns>The index of the layer which is not ordered by <paramref name="baryCenter"/> anymore.
         /// If all of the layers ordered, and phase2 sweep done it returns with -1.</returns>
-        protected int SugiyamaPhase2Sweep( int start, int end, int step, BaryCenter baryCenter, bool byRealPosition, CancellationToken cancellationToken )
+        protected int SugiyamaPhase2Sweep(int start, int end, int step, BaryCenter baryCenter, bool byRealPosition, CancellationToken cancellationToken)
         {
             CrossCount crossCountDirection = baryCenter == BaryCenter.Up ? CrossCount.Up : CrossCount.Down;
-            for ( int i = start; i != end; i += step )
+            for (int i = start; i != end; i += step)
             {
-                var layer = _layers[i];
+                VertexLayer layer = _layers[i];
 
                 //switch the vertices with the same barycenters, if and only if there will be less barycenters
-                layer.Measure( baryCenter, byRealPosition );
-                layer.FindBestPermutation( crossCountDirection );
+                layer.Measure(baryCenter, byRealPosition);
+                layer.FindBestPermutation(crossCountDirection);
 
-                if ( byRealPosition )
+                if (byRealPosition)
                 {
-                    HorizontalPositionAssignmentOnLayer( i, baryCenter, cancellationToken );
-                    CopyPositionsSilent( false );
+                    HorizontalPositionAssignmentOnLayer(i, baryCenter, cancellationToken);
+                    CopyPositionsSilent(false);
                 }
                 else
                 {
                     CopyPositions(cancellationToken);
                 }
-                OnIterationEnded( " Phase 2 sweepstep finished [" + baryCenter + "-barycentering on layer " + i + "]" );
-                if ( i + step != end )
+                OnIterationEnded(" Phase 2 sweepstep finished [" + baryCenter + "-barycentering on layer " + i + "]");
+                if (i + step != end)
                 {
-                    var nextLayer = _layers[i + step];
-                    if ( !nextLayer.IsOrderedByBaryCenters( baryCenter, byRealPosition ) )
-                        return ( i + step );
+                    VertexLayer nextLayer = _layers[i + step];
+                    if (!nextLayer.IsOrderedByBaryCenters(baryCenter, byRealPosition))
+                    {
+                        return (i + step);
+                    }
                 }
             }
             return -1;
         }
 
-        protected void SugiyamaDirtyPhase( bool byRealPosition, CancellationToken cancellationToken )
+        protected void SugiyamaDirtyPhase(bool byRealPosition, CancellationToken cancellationToken)
         {
-            if ( _layers.Count < 2 )
+            if (_layers.Count < 2)
+            {
                 return;
+            }
 
             const bool dirty = true;
-            SugiyamaPhase1Sweep( 1, _layers.Count, 1, BaryCenter.Up, dirty, byRealPosition, cancellationToken );
-            SugiyamaPhase1Sweep( _layers.Count - 2, -1, -1, BaryCenter.Down, dirty, byRealPosition, cancellationToken );
+            SugiyamaPhase1Sweep(1, _layers.Count, 1, BaryCenter.Up, dirty, byRealPosition, cancellationToken);
+            SugiyamaPhase1Sweep(_layers.Count - 2, -1, -1, BaryCenter.Down, dirty, byRealPosition, cancellationToken);
         }
 
-        protected bool SugiyamaPhase1( int startLayerIndex, BaryCenter startBaryCentering, bool ByRealPosition, CancellationToken cancellationToken )
+        protected bool SugiyamaPhase1(int startLayerIndex, BaryCenter startBaryCentering, bool ByRealPosition, CancellationToken cancellationToken)
         {
-            if ( _layers.Count < 2 ) return false;
+            if (_layers.Count < 2)
+            {
+                return false;
+            }
 
             const bool dirty = false;
             bool sweepDownOptimized = false;
 
-            if ( startBaryCentering == BaryCenter.Up )
+            if (startBaryCentering == BaryCenter.Up)
             {
-                sweepDownOptimized = SugiyamaPhase1Sweep( startLayerIndex == -1 ? 1 : startLayerIndex, _layers.Count, 1, BaryCenter.Up, dirty, ByRealPosition, cancellationToken );
+                sweepDownOptimized = SugiyamaPhase1Sweep(startLayerIndex == -1 ? 1 : startLayerIndex, _layers.Count, 1, BaryCenter.Up, dirty, ByRealPosition, cancellationToken);
                 startLayerIndex = -1;
             }
 
-            bool sweepUpOptimized = SugiyamaPhase1Sweep( startLayerIndex == -1 ? _layers.Count - 2 : startLayerIndex, -1, -1, BaryCenter.Down, dirty, ByRealPosition, cancellationToken );
+            bool sweepUpOptimized = SugiyamaPhase1Sweep(startLayerIndex == -1 ? _layers.Count - 2 : startLayerIndex, -1, -1, BaryCenter.Down, dirty, ByRealPosition, cancellationToken);
 
             return sweepUpOptimized || sweepDownOptimized;
         }
 
-        protected bool SugiyamaPhase1( bool byRealPosition, CancellationToken cancellationToken )
+        protected bool SugiyamaPhase1(bool byRealPosition, CancellationToken cancellationToken)
         {
-            return SugiyamaPhase1( -1, BaryCenter.Up, byRealPosition, cancellationToken );
+            return SugiyamaPhase1(-1, BaryCenter.Up, byRealPosition, cancellationToken);
         }
 
-        protected bool SugiyamaPhase2( out int unorderedLayerIndex, out BaryCenter baryCentering, bool byRealPosition, CancellationToken cancellationToken )
+        protected bool SugiyamaPhase2(out int unorderedLayerIndex, out BaryCenter baryCentering, bool byRealPosition, CancellationToken cancellationToken)
         {
             //Sweeping up
-            unorderedLayerIndex = SugiyamaPhase2Sweep( 1, _layers.Count, 1, BaryCenter.Up, byRealPosition, cancellationToken );
-            if ( unorderedLayerIndex != -1 )
+            unorderedLayerIndex = SugiyamaPhase2Sweep(1, _layers.Count, 1, BaryCenter.Up, byRealPosition, cancellationToken);
+            if (unorderedLayerIndex != -1)
             {
                 baryCentering = BaryCenter.Up;
                 return false;
             }
 
             //Sweeping down
-            unorderedLayerIndex = SugiyamaPhase2Sweep( _layers.Count - 2, -1, -1, BaryCenter.Down, byRealPosition, cancellationToken );
+            unorderedLayerIndex = SugiyamaPhase2Sweep(_layers.Count - 2, -1, -1, BaryCenter.Down, byRealPosition, cancellationToken);
             baryCentering = BaryCenter.Down;
-            if ( unorderedLayerIndex != -1 )
+            if (unorderedLayerIndex != -1)
+            {
                 return false;
+            }
 
             //Phase 2 done
             return true;
@@ -492,9 +544,11 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         protected void SugiyamaLayout(CancellationToken cancellationToken)
         {
             bool baryCenteringByRealPositions = Parameters.PositionCalculationMethod == PositionCalculationMethodTypes.PositionBased;
-            if ( Parameters.DirtyRound )
+            if (Parameters.DirtyRound)
+            {
                 //start with a dirty round (sort by barycenters, even if the number of the crossings will rise)
-                SugiyamaDirtyPhase( baryCenteringByRealPositions, cancellationToken );
+                SugiyamaDirtyPhase(baryCenteringByRealPositions, cancellationToken);
+            }
 
             bool changed = true;
             int iteration1Left = Parameters.Phase1IterationCount;
@@ -504,14 +558,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             int startLayerIndex = -1;
             BaryCenter startBaryCentering = BaryCenter.Up;
 
-            while ( changed && ( iteration1Left > 0 || iteration2Left > 0 ) )
+            while (changed && (iteration1Left > 0 || iteration2Left > 0))
             {
                 changed = false;
 
                 //
                 // Phase 1 - while there's any optimization
                 //
-                while ( iteration1Left > 0 && SugiyamaPhase1( startLayerIndex, startBaryCentering, baryCenteringByRealPositions, cancellationToken ) )
+                while (iteration1Left > 0 && SugiyamaPhase1(startLayerIndex, startBaryCentering, baryCenteringByRealPositions, cancellationToken))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -525,14 +579,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 //
                 // Phase 2
                 //
-                if ( iteration2Left > 0 )
+                if (iteration2Left > 0)
                 {
-                    SugiyamaPhase2( out startLayerIndex, out startBaryCentering, baryCenteringByRealPositions, cancellationToken );
+                    SugiyamaPhase2(out startLayerIndex, out startBaryCentering, baryCenteringByRealPositions, cancellationToken);
                     iteration2Left--;
                 }
 
                 // Phase fallback
-                if ( startLayerIndex != -1 )
+                if (startLayerIndex != -1)
                 {
                     iteration1Left = Parameters.Phase1IterationCount;
                     changed = true;
@@ -542,14 +596,15 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             }
 
             #region Mark the neighbour vertices connected with associative edges
-            foreach ( SugiEdge e in _graph.GeneralEdges )
+
+            foreach (SugiEdge e in _graph.GeneralEdges)
             {
-                int sourceIndex = _layers[e.Source.LayerIndex].IndexOf( e.Source );
-                int targetIndex = _layers[e.Target.LayerIndex].IndexOf( e.Target );
-                bool shouldBeMarked = e.Source.LayerIndex == e.Target.LayerIndex && Math.Abs( sourceIndex - targetIndex ) == 1;
-                if ( shouldBeMarked )
+                int sourceIndex = _layers[e.Source.LayerIndex].IndexOf(e.Source);
+                int targetIndex = _layers[e.Target.LayerIndex].IndexOf(e.Target);
+                bool shouldBeMarked = e.Source.LayerIndex == e.Target.LayerIndex && Math.Abs(sourceIndex - targetIndex) == 1;
+                if (shouldBeMarked)
                 {
-                    if ( sourceIndex < targetIndex )
+                    if (sourceIndex < targetIndex)
                     {
                         e.Source.RightGeneralEdgeCount += 1;
                         e.Target.LeftGeneralEdgeCount += 1;
@@ -561,55 +616,60 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     }
                 }
             }
-            #endregion
+
+            #endregion Mark the neighbour vertices connected with associative edges
         }
-        #endregion
+
+        #endregion Sugiyama Layout
 
         #region Last phase - Horizontal Assignment, edge routing, copying of the positions
+
         protected void AssignPriorities(CancellationToken cancellationToken)
         {
-            foreach (var v in _graph.Vertices)
+            foreach (SugiVertex v in _graph.Vertices)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 v.Priority = (v.IsDummyVertex ? int.MaxValue : _graph.HierarchicalEdgeCountFor(v));
             }
         }
 
-        private double CalculateOverlap( SugiVertex a, SugiVertex b )
+        private double CalculateOverlap(SugiVertex a, SugiVertex b)
         {
-            return CalculateOverlap( a, b, 0 );
+            return CalculateOverlap(a, b, 0);
         }
 
-        private double CalculateOverlap( SugiVertex a, SugiVertex b, double plusGap )
+        private double CalculateOverlap(SugiVertex a, SugiVertex b, double plusGap)
         {
-            return Math.Max( 0, ( ( b.Size.Width + a.Size.Width ) * 0.5 + plusGap + Parameters.HorizontalGap ) - ( b.RealPosition.X - a.RealPosition.X ) );
+            return Math.Max(0, ((b.Size.Width + a.Size.Width) * 0.5 + plusGap + Parameters.HorizontalGap) - (b.RealPosition.X - a.RealPosition.X));
         }
 
-        protected void HorizontalPositionAssignmentOnLayer( int layerIndex, BaryCenter baryCenter, CancellationToken cancellationToken )
+        protected void HorizontalPositionAssignmentOnLayer(int layerIndex, BaryCenter baryCenter, CancellationToken cancellationToken)
         {
-            var layer = _layers[layerIndex];
+            VertexLayer layer = _layers[layerIndex];
 
             //compute where the vertices should be placed
-            layer.Measure( baryCenter, true );
+            layer.Measure(baryCenter, true);
             layer.CalculateSubPriorities();
 
             //set the RealPositions to NaN
-            foreach ( var v in layer )
+            foreach (SugiVertex v in layer)
+            {
                 v.RealPosition.X = float.NaN;
+            }
 
             //set the positions in the order of the priorities, start with the lower priorities
-            foreach ( var v in from vertex in layer
-                               orderby vertex.Priority ascending, vertex.SubPriority ascending
-                               select vertex )
+            foreach (SugiVertex v in from vertex in layer
+                                     orderby vertex.Priority ascending, vertex.SubPriority ascending
+                                     select vertex)
             {
                 //first set the new position
                 v.RealPosition.X = v.Measure;
 
                 //check if there's any overlap between the actual vertex and the vertices which position has already been set
                 SugiVertex v1 = v;
-                var alreadySetVertices = layer.Where( vertex => ( !double.IsNaN( vertex.RealPosition.X ) && vertex != v1 ) ).ToArray();
+                SugiVertex[] alreadySetVertices = layer.Where(vertex => (!double.IsNaN(vertex.RealPosition.X) && vertex != v1)).ToArray();
 
-                if ( alreadySetVertices.Length == 0 )
+                if (alreadySetVertices.Length == 0)
                 {
                     //there can't be any overlap
                     continue;
@@ -628,31 +688,34 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 double leftOverlap = 0, rightOverlap = 0;
 
                 //check the overlap with vertex on the left
-                if ( indexOfV > 0 )
+                if (indexOfV > 0)
                 {
                     leftNeighbor = alreadySetVertices[indexOfV - 1];
-                    leftOverlap = CalculateOverlap( leftNeighbor, v );
+                    leftOverlap = CalculateOverlap(leftNeighbor, v);
                 }
-                if ( indexOfV < alreadySetVertices.Length )
+                if (indexOfV < alreadySetVertices.Length)
                 {
                     rightNeighbor = alreadySetVertices[indexOfV];
-                    rightOverlap = CalculateOverlap( v, rightNeighbor );
+                    rightOverlap = CalculateOverlap(v, rightNeighbor);
                 }
 
                 // ReSharper disable PossibleNullReferenceException
                 //only one neighbor overlaps
-                if ( leftOverlap > 0 && rightOverlap == 0 )
+                if (leftOverlap > 0 && rightOverlap == 0)
                 {
-                    if ( leftNeighbor.Priority == v.Priority )
+                    if (leftNeighbor.Priority == v.Priority)
                     {
                         double leftMove = leftOverlap * 0.5;
-                        if ( rightNeighbor != null )
-                            rightOverlap = CalculateOverlap( v, rightNeighbor, leftMove );
+                        if (rightNeighbor != null)
+                        {
+                            rightOverlap = CalculateOverlap(v, rightNeighbor, leftMove);
+                        }
+
                         leftNeighbor.RealPosition.X -= leftMove;
                         v.RealPosition.X += leftMove;
-                        if ( rightOverlap > 0 )
+                        if (rightOverlap > 0)
                         {
-                            if ( v.Priority == rightNeighbor.Priority )
+                            if (v.Priority == rightNeighbor.Priority)
                             {
                                 double rightMove = rightOverlap * 0.5;
                                 rightNeighbor.RealPosition.X += rightMove;
@@ -670,18 +733,21 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                         leftNeighbor.RealPosition.X -= leftOverlap;
                     }
                 }
-                else if ( leftOverlap == 0 && rightOverlap > 0 )
+                else if (leftOverlap == 0 && rightOverlap > 0)
                 {
-                    if ( v.Priority == rightNeighbor.Priority )
+                    if (v.Priority == rightNeighbor.Priority)
                     {
                         double rightMove = rightOverlap * 0.5;
-                        if ( leftNeighbor != null )
-                            leftOverlap = CalculateOverlap( leftNeighbor, v, rightMove );
+                        if (leftNeighbor != null)
+                        {
+                            leftOverlap = CalculateOverlap(leftNeighbor, v, rightMove);
+                        }
+
                         rightNeighbor.RealPosition.X += rightMove;
                         v.RealPosition.X -= rightMove;
-                        if ( leftOverlap > 0 )
+                        if (leftOverlap > 0)
                         {
-                            if ( leftNeighbor.Priority == v.Priority )
+                            if (leftNeighbor.Priority == v.Priority)
                             {
                                 double leftMove = leftOverlap * 0.5;
                                 leftNeighbor.RealPosition.X -= leftMove;
@@ -699,23 +765,23 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                         rightNeighbor.RealPosition.X += rightOverlap;
                     }
                 }
-                else if ( leftOverlap > 0 && rightOverlap > 0 )
+                else if (leftOverlap > 0 && rightOverlap > 0)
                 {
                     //if both neighbor overlapped
                     //priorities equals, 1 priority lower, 2 priority lower
-                    if ( leftNeighbor.Priority < v.Priority && v.Priority == rightNeighbor.Priority )
+                    if (leftNeighbor.Priority < v.Priority && v.Priority == rightNeighbor.Priority)
                     {
                         double rightMove = rightOverlap * 0.5;
                         rightNeighbor.RealPosition.X += rightMove;
                         v.RealPosition.X -= rightMove;
-                        leftNeighbor.RealPosition.X -= ( leftOverlap + rightMove );
+                        leftNeighbor.RealPosition.X -= (leftOverlap + rightMove);
                     }
-                    else if ( leftNeighbor.Priority == v.Priority && v.Priority > rightNeighbor.Priority )
+                    else if (leftNeighbor.Priority == v.Priority && v.Priority > rightNeighbor.Priority)
                     {
                         double leftMove = leftOverlap * 0.5;
                         leftNeighbor.RealPosition.X -= leftMove;
                         v.RealPosition.X += leftMove;
-                        rightNeighbor.RealPosition.X = ( rightOverlap + leftMove );
+                        rightNeighbor.RealPosition.X = (rightOverlap + leftMove);
                     }
                     else
                     {
@@ -727,33 +793,39 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 // ReSharper restore PossibleNullReferenceException
 
                 //the vertices on the left side of the leftNeighbor will be moved, if they overlap
-                if ( leftOverlap > 0 )
-                    for ( int index = indexOfV - 1;
+                if (leftOverlap > 0)
+                {
+                    for (int index = indexOfV - 1;
                           index > 0
-                          && ( leftOverlap = CalculateOverlap( alreadySetVertices[index - 1], alreadySetVertices[index] ) ) > 0;
-                          index-- )
+                          && (leftOverlap = CalculateOverlap(alreadySetVertices[index - 1], alreadySetVertices[index])) > 0;
+                          index--)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         alreadySetVertices[index - 1].RealPosition.X -= leftOverlap;
                     }
+                }
 
                 //the vertices on the right side of the rightNeighbor will be moved, if they overlap
-                if ( rightOverlap > 0 )
-                    for ( int index = indexOfV;
+                if (rightOverlap > 0)
+                {
+                    for (int index = indexOfV;
                           index < alreadySetVertices.Length - 1
-                          && ( rightOverlap = CalculateOverlap( alreadySetVertices[index], alreadySetVertices[index + 1] ) ) > 0;
-                          index++ )
+                          && (rightOverlap = CalculateOverlap(alreadySetVertices[index], alreadySetVertices[index + 1])) > 0;
+                          index++)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         alreadySetVertices[index + 1].RealPosition.X += rightOverlap;
                     }
+                }
             }
         }
 
-        protected void HorizontalPositionAssignmentSweep( int start, int end, int step, BaryCenter baryCenter, CancellationToken cancellationToken )
+        protected void HorizontalPositionAssignmentSweep(int start, int end, int step, BaryCenter baryCenter, CancellationToken cancellationToken)
         {
-            for ( int i = start; i != end; i += step )
-                HorizontalPositionAssignmentOnLayer( i, baryCenter, cancellationToken );
+            for (int i = start; i != end; i += step)
+            {
+                HorizontalPositionAssignmentOnLayer(i, baryCenter, cancellationToken);
+            }
         }
 
         protected void HorizontalPositionAssignment(CancellationToken cancellationToken)
@@ -762,10 +834,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             //positions computed with the barycenter method, based on the realpositions
             AssignPriorities(cancellationToken);
 
-            if ( _layers.Count > 1 )
+            if (_layers.Count > 1)
             {
-                HorizontalPositionAssignmentSweep( 1, _layers.Count, 1, BaryCenter.Up, cancellationToken );
-                HorizontalPositionAssignmentSweep( _layers.Count - 2, -1, -1, BaryCenter.Down, cancellationToken );
+                HorizontalPositionAssignmentSweep(1, _layers.Count, 1, BaryCenter.Up, cancellationToken);
+                HorizontalPositionAssignmentSweep(_layers.Count - 2, -1, -1, BaryCenter.Down, cancellationToken);
             }
         }
 
@@ -773,19 +845,19 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         {
             //initialize positions
             double verticalPos = 0;
-            for ( int i = 0; i < _layers.Count; i++ )
+            for (int i = 0; i < _layers.Count; i++)
             {
                 double pos = 0;
                 double layerHeight = _layers[i].Height;
-                foreach ( var v in _layers[i] )
+                foreach (SugiVertex v in _layers[i])
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     v.RealPosition.X = pos;
                     v.RealPosition.Y =
-                        ( ( i == 0 )
-                            ? ( layerHeight - v.Size.Height )
-                            : verticalPos + layerHeight * (float)0.5 );
+                        ((i == 0)
+                            ? (layerHeight - v.Size.Height)
+                            : verticalPos + layerHeight * (float)0.5);
 
                     pos += v.Size.Width + Parameters.HorizontalGap;
                 }
@@ -798,45 +870,51 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         protected void CopyPositionsSilent()
         {
-            CopyPositionsSilent( true );
+            CopyPositionsSilent(true);
         }
 
-        protected void CopyPositionsSilent( bool shouldTranslate )
+        protected void CopyPositionsSilent(bool shouldTranslate)
         {
             //calculate the topLeft position
-            var translation = new Vector( float.PositiveInfinity, float.PositiveInfinity );
-            if ( shouldTranslate )
+            Vector translation = new Vector(float.PositiveInfinity, float.PositiveInfinity);
+            if (shouldTranslate)
             {
-                foreach ( var v in _graph.Vertices )
+                foreach (SugiVertex v in _graph.Vertices)
                 {
-                    if ( double.IsNaN( v.RealPosition.X ) || double.IsNaN( v.RealPosition.Y ) )
+                    if (double.IsNaN(v.RealPosition.X) || double.IsNaN(v.RealPosition.Y))
+                    {
                         continue;
+                    }
 
-                    translation.X = Math.Min( v.RealPosition.X, translation.X );
-                    translation.Y = Math.Min( v.RealPosition.Y, translation.Y );
+                    translation.X = Math.Min(v.RealPosition.X, translation.X);
+                    translation.Y = Math.Min(v.RealPosition.Y, translation.Y);
                 }
                 translation *= -1;
                 translation.X += Parameters.VerticalGap / 2;
                 translation.Y += Parameters.HorizontalGap / 2;
 
                 //translate with the topLeft position
-                foreach ( var v in _graph.Vertices )
+                foreach (SugiVertex v in _graph.Vertices)
+                {
                     v.RealPosition += translation;
+                }
             }
             else
             {
-                translation = new Vector( 0, 0 );
+                translation = new Vector(0, 0);
             }
 
             //copy the positions of the vertices
             VertexPositions.Clear();
-            foreach ( var v in _graph.Vertices )
+            foreach (SugiVertex v in _graph.Vertices)
             {
-                if ( v.IsDummyVertex )
+                if (v.IsDummyVertex)
+                {
                     continue;
+                }
 
                 Point pos = v.RealPosition;
-                if ( !shouldTranslate )
+                if (!shouldTranslate)
                 {
                     pos.X += v.Size.Width * 0.5 + translation.X;
                     pos.Y += v.Size.Height * 0.5 + translation.Y;
@@ -846,15 +924,17 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
             //copy the edge routes
             EdgeRoutes.Clear();
-            foreach ( var e in _graph.HiddenEdges )
+            foreach (SugiEdge e in _graph.HiddenEdges)
             {
-                if ( !e.IsLongEdge )
+                if (!e.IsLongEdge)
+                {
                     continue;
+                }
 
                 EdgeRoutes[e.Original] =
                     e.IsReverted
-                        ? e.DummyVertices.Reverse().Select( dv => dv.RealPosition ).ToArray()
-                        : e.DummyVertices.Select( dv => dv.RealPosition ).ToArray();
+                        ? e.DummyVertices.Reverse().Select(dv => dv.RealPosition).ToArray()
+                        : e.DummyVertices.Select(dv => dv.RealPosition).ToArray();
             }
         }
 
@@ -867,15 +947,20 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
             CopyPositionsSilent();
         }
-        #endregion
+
+        #endregion Last phase - Horizontal Assignment, edge routing, copying of the positions
 
         public override void Compute(CancellationToken cancellationToken)
         {
-            if(_graph.VertexCount == 0) return;
+            if (_graph.VertexCount == 0)
+            {
+                return;
+            }
+
             if (_graph.VertexCount == 1)
             {
                 VertexPositions.Clear();
-                VertexPositions[_graph.Vertices.First().Original] = new Point(0,0);
+                VertexPositions[_graph.Vertices.First().Original] = new Point(0, 0);
                 return;
             }
             //
@@ -900,7 +985,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             //Phase 4 - Horizontal position assignment
             //
             CopyPositions(cancellationToken);
-            OnIterationEnded( "Position adjusting finished" );
+            OnIterationEnded("Position adjusting finished");
 
             //Phase 5 - Incremental extension, add vertices connected with only general edges
             //IncrementalExtensionImproved();
@@ -911,13 +996,16 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         public override void ResetGraph(IEnumerable<TVertex> vertices, IEnumerable<TEdge> edges)
         {
             if (VisitedGraph == null && !TryCreateNewGraph())
+            {
                 throw new GX_GeneralException("Can't create new graph through reflection. Make sure it support default constructor.");
+            }
+
             VisitedGraph.Clear();
             VisitedGraph.AddVertexRange(vertices);
             VisitedGraph.AddEdgeRange(edges);
         }
 
-        protected void OnIterationEnded( string message )
+        protected void OnIterationEnded(string message)
         {
             //OnIterationEnded( _iteration, _statusInPercent, message, true );
         }

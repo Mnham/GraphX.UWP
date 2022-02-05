@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-using GraphX.Measure;
+﻿using GraphX.Measure;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {

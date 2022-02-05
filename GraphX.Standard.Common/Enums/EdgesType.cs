@@ -6,10 +6,12 @@ namespace GraphX.Common.Enums
         /// In edges
         /// </summary>
         In,
+
         /// <summary>
         /// Out edges
         /// </summary>
         Out,
+
         /// <summary>
         /// Both In and Out edges
         /// </summary>

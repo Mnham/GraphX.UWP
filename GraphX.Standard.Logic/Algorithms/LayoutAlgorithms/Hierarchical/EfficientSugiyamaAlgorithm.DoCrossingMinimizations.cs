@@ -1,10 +1,12 @@
-﻿using System;
+﻿using GraphX.Common;
+
+using QuikGraph;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using GraphX.Common;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -33,7 +35,9 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             _sparseCompactionByLayerBackup = new IList<Edge<Data>>[_layers.Count];
             _alternatingLayers = new AlternatingLayer[_layers.Count];
             for (int i = 0; i < _layers.Count; i++)
+            {
                 _crossCounts[i] = int.MaxValue;
+            }
 
             int phase1iterationLeft = 100;
             int phase2iterationLeft = _layers.Count;
@@ -48,30 +52,41 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 changed = false;
                 prevCrossings = crossings;
                 if (phase == 1)
+                {
                     phase1iterationLeft--;
+                }
                 else if (phase == 2)
+                {
                     phase2iterationLeft--;
+                }
+
                 wasPhase2 = (phase == 2);
 
                 crossings = Sweeping(0, _layers.Count - 1, 1, enableSameMeasureOptimization, out c, ref phase, cancellationToken);
                 changed = changed || c;
                 if (crossings == 0)
+                {
                     break;
+                }
 
                 crossings = Sweeping(_layers.Count - 1, 0, -1, enableSameMeasureOptimization, out c, ref phase, cancellationToken);
                 changed = changed || c;
                 if (phase == 1 && (!changed || crossings >= prevCrossings) && phase2iterationLeft > 0)
+                {
                     phase = 2;
+                }
                 else if (phase == 2)
+                {
                     phase = 1;
-            } while (crossings > 0 
-                && ((phase2iterationLeft > 0 || wasPhase2) 
+                }
+            } while (crossings > 0
+                && ((phase2iterationLeft > 0 || wasPhase2)
                     || (phase1iterationLeft > 0 && (crossings < prevCrossings) && changed)));
         }
 
         /// <summary>
         /// Sweeps between the <paramref name="startLayerIndex"/> and <paramref name="endLayerIndex"/>
-        /// in the way represented by the step 
+        /// in the way represented by the step
         /// </summary>
         /// <param name="startLayerIndex">The index of the start layer (where the sweeping starts from).</param>
         /// <param name="endLayerIndex">The index of the last layer (where the sweeping ends).</param>
@@ -82,7 +97,11 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             int crossings = 0;
             changed = false;
             AlternatingLayer alternatingLayer = null;
-            if (_alternatingLayers.Length == 0) return 0;
+            if (_alternatingLayers.Length == 0)
+            {
+                return 0;
+            }
+
             if (_alternatingLayers[startLayerIndex] == null)
             {
                 alternatingLayer = new AlternatingLayer();
@@ -90,16 +109,18 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 alternatingLayer.EnsureAlternatingAndPositions();
                 AddAlternatingLayerToSparseCompactionGraph(alternatingLayer, startLayerIndex);
                 _alternatingLayers[startLayerIndex] = alternatingLayer;
-            } else {
+            }
+            else
+            {
                 alternatingLayer = _alternatingLayers[startLayerIndex];
             }
-                OutputAlternatingLayer(alternatingLayer, startLayerIndex, 0);
+            OutputAlternatingLayer(alternatingLayer, startLayerIndex, 0);
             for (int i = startLayerIndex; i != endLayerIndex; i += step)
             {
                 int ci = Math.Min(i, i + step);
                 int prevCrossCount = _crossCounts[ci];
 
-                if (_alternatingLayers[i+step] != null) 
+                if (_alternatingLayers[i + step] != null)
                 {
                     alternatingLayer.SetPositions();
                     _alternatingLayers[i + step].SetPositions();
@@ -161,11 +182,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private void ReplaceLayer(AlternatingLayer alternatingLayer, int i)
         {
             _layers[i].Clear();
-            foreach (var item in alternatingLayer)
+            foreach (IData item in alternatingLayer)
             {
-                var vertex = item as SugiVertex;
+                SugiVertex vertex = item as SugiVertex;
                 if (vertex == null)
+                {
                     continue;
+                }
+
                 _layers[i].Add(vertex);
                 vertex.IndexInsideLayer = i;
             }
@@ -177,13 +201,13 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             int nextLayerIndex,
             bool enableSameMeasureOptimization,
             int prevCrossCount,
-            int phase, 
+            int phase,
             CancellationToken cancellationToken)
         {
             //decide which way we are sweeping (up or down)
             //straight = down, reverse = up
             bool straightSweep = (actualLayerIndex < nextLayerIndex);
-            var nextAlternatingLayer = alternatingLayer.Clone();
+            AlternatingLayer nextAlternatingLayer = alternatingLayer.Clone();
 
             /* 1 */
             AppendSegmentsToAlternatingLayer(nextAlternatingLayer, straightSweep);
@@ -211,9 +235,9 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private IList<SugiVertex> FindVerticesWithSameMeasure(CancellationToken cancellationToken, AlternatingLayer nextAlternatingLayer, bool straightSweep, out IList<int> ranges, out int maxRangeLength)
         {
-            var ignorableVertexType = straightSweep ? VertexTypes.QVertex : VertexTypes.PVertex;
-            var verticesWithSameMeasure = new List<SugiVertex>();
-            var vertices = nextAlternatingLayer.OfType<SugiVertex>().ToArray();
+            VertexTypes ignorableVertexType = straightSweep ? VertexTypes.QVertex : VertexTypes.PVertex;
+            List<SugiVertex> verticesWithSameMeasure = new List<SugiVertex>();
+            SugiVertex[] vertices = nextAlternatingLayer.OfType<SugiVertex>().ToArray();
             int startIndex, endIndex;
             maxRangeLength = 0;
             int rangeCount = 0;
@@ -224,7 +248,8 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
                 for (endIndex = startIndex + 1;
                       endIndex < vertices.Length && vertices[startIndex].MeasuredPosition == vertices[endIndex].MeasuredPosition;
-                      endIndex++) { }
+                      endIndex++)
+                { }
                 endIndex -= 1;
 
                 if (endIndex > startIndex)
@@ -235,12 +260,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                         cancellationToken.ThrowIfCancellationRequested();
 
                         if (vertices[i].Type == ignorableVertexType || vertices[i].DoNotOpt)
+                        {
                             continue;
+                        }
 
                         rangeLength++;
                         verticesWithSameMeasure.Add(vertices[i]);
                     }
-                    if (rangeLength > 0) 
+                    if (rangeLength > 0)
                     {
                         maxRangeLength = Math.Max(rangeLength, maxRangeLength);
                         ranges.Add(rangeLength);
@@ -253,11 +280,13 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private void AddAlternatingLayerToSparseCompactionGraph(AlternatingLayer nextAlternatingLayer, int layerIndex)
         {
-            var _sparseCompationGraphEdgesOfLayer = _sparseCompactionByLayerBackup[layerIndex];
+            IList<Edge<Data>> _sparseCompationGraphEdgesOfLayer = _sparseCompactionByLayerBackup[layerIndex];
             if (_sparseCompationGraphEdgesOfLayer != null)
             {
-                foreach (var edge in _sparseCompationGraphEdgesOfLayer)
+                foreach (Edge<Data> edge in _sparseCompationGraphEdgesOfLayer)
+                {
                     _sparseCompactionGraph.RemoveEdge(edge);
+                }
             }
 
             _sparseCompationGraphEdgesOfLayer = new List<Edge<Data>>();
@@ -265,32 +294,35 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             for (int i = 1; i < nextAlternatingLayer.Count; i += 2)
             {
                 vertex = nextAlternatingLayer[i] as SugiVertex;
-                var prevContainer = nextAlternatingLayer[i - 1] as SegmentContainer;
-                var nextContainer = nextAlternatingLayer[i + 1] as SegmentContainer;
+                SegmentContainer prevContainer = nextAlternatingLayer[i - 1] as SegmentContainer;
+                SegmentContainer nextContainer = nextAlternatingLayer[i + 1] as SegmentContainer;
                 if (prevContainer != null && prevContainer.Count > 0)
                 {
-                    var lastSegment = prevContainer[prevContainer.Count - 1];
-                    var edge = new Edge<Data>(lastSegment, vertex);
+                    Segment lastSegment = prevContainer[prevContainer.Count - 1];
+                    Edge<Data> edge = new Edge<Data>(lastSegment, vertex);
                     _sparseCompationGraphEdgesOfLayer.Add(edge);
                     _sparseCompactionGraph.AddVerticesAndEdge(edge);
                 }
                 else if (prevVertex != null)
                 {
-                    var edge = new Edge<Data>(prevVertex, vertex);
+                    Edge<Data> edge = new Edge<Data>(prevVertex, vertex);
                     _sparseCompationGraphEdgesOfLayer.Add(edge);
                     _sparseCompactionGraph.AddVerticesAndEdge(edge);
                 }
 
                 if (nextContainer != null && nextContainer.Count > 0)
                 {
-                    var firstSegment = nextContainer[0];
-                    var edge = new Edge<Data>(vertex, firstSegment);
+                    Segment firstSegment = nextContainer[0];
+                    Edge<Data> edge = new Edge<Data>(vertex, firstSegment);
                     _sparseCompationGraphEdgesOfLayer.Add(edge);
                     _sparseCompactionGraph.AddVerticesAndEdge(edge);
                 }
 
                 if (vertex != null && !_sparseCompactionGraph.ContainsVertex(vertex))
+                {
                     _sparseCompactionGraph.AddVertex(vertex);
+                }
+
                 prevVertex = vertex;
             }
             _sparseCompactionByLayerBackup[layerIndex] = _sparseCompationGraphEdgesOfLayer;
@@ -325,32 +357,34 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             CancellationToken cancellationToken)
         {
             IList<CrossCounterPair> realEdgePairs;
-            var topLayer = straightSweep ? alternatingLayer : nextAlternatingLayer;
-            var bottomLayer = straightSweep ? nextAlternatingLayer : alternatingLayer;
+            AlternatingLayer topLayer = straightSweep ? alternatingLayer : nextAlternatingLayer;
+            AlternatingLayer bottomLayer = straightSweep ? nextAlternatingLayer : alternatingLayer;
 
             int firstLayerSize, secondLayerSize;
-            var lastOnTopLayer = topLayer[topLayer.Count - 1];
-            var lastOnBottomLayer = bottomLayer[bottomLayer.Count - 1];
+            IData lastOnTopLayer = topLayer[topLayer.Count - 1];
+            IData lastOnBottomLayer = bottomLayer[bottomLayer.Count - 1];
             firstLayerSize = lastOnTopLayer.Position + (lastOnTopLayer is ISegmentContainer ? ((ISegmentContainer)lastOnTopLayer).Count : 1);
             secondLayerSize = lastOnBottomLayer.Position + (lastOnBottomLayer is ISegmentContainer ? ((ISegmentContainer)lastOnBottomLayer).Count : 1);
 
-            var virtualEdgePairs = FindVirtualEdgePairs(topLayer, bottomLayer);
-            var realEdges = FindRealEdges(topLayer, cancellationToken);
+            IList<CrossCounterPair> virtualEdgePairs = FindVirtualEdgePairs(topLayer, bottomLayer);
+            IList<SugiEdge> realEdges = FindRealEdges(topLayer, cancellationToken);
 
             if (enableSameMeasureOptimization || reverseVerticesWithSameMeasure)
             {
-                IList<int> ranges;
-                int maxRangeLength;
-                var verticesWithSameMeasure = FindVerticesWithSameMeasure(cancellationToken, nextAlternatingLayer, straightSweep, out ranges, out maxRangeLength);
-                var verticesWithSameMeasureSet = new HashSet<SugiVertex>(verticesWithSameMeasure);
+                IList<SugiVertex> verticesWithSameMeasure = FindVerticesWithSameMeasure(cancellationToken, nextAlternatingLayer, straightSweep, out IList<int> ranges, out int maxRangeLength);
+                HashSet<SugiVertex> verticesWithSameMeasureSet = new HashSet<SugiVertex>(verticesWithSameMeasure);
 
                 //initialize permutation indices
                 for (int i = 0; i < verticesWithSameMeasure.Count; i++)
+                {
                     verticesWithSameMeasure[i].PermutationIndex = i;
+                }
 
                 int bestCrossCount = prevCrossCount;
-                foreach (var realEdge in realEdges)
+                foreach (SugiEdge realEdge in realEdges)
+                {
                     realEdge.SaveMarkedToTemp();
+                }
 
                 List<SugiVertex> sortedVertexList = null;
                 if (!reverseVerticesWithSameMeasure)
@@ -360,14 +394,16 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 else
                 {
                     sortedVertexList = new List<SugiVertex>(verticesWithSameMeasure.Count);
-                    var stack = new Stack<SugiVertex>(verticesWithSameMeasure.Count);
-                    var rnd = new Random(Parameters.Seed);
-                    foreach (var v in verticesWithSameMeasure)
+                    Stack<SugiVertex> stack = new Stack<SugiVertex>(verticesWithSameMeasure.Count);
+                    Random rnd = new Random(Parameters.Seed);
+                    foreach (SugiVertex v in verticesWithSameMeasure)
                     {
                         if (stack.Count > 0 && (stack.Peek().MeasuredPosition != v.MeasuredPosition || rnd.NextDouble() > 0.8))
                         {
                             while (stack.Count > 0)
+                            {
                                 sortedVertexList.Add(stack.Pop());
+                            }
                         }
                         stack.Push(v);
                     }
@@ -387,7 +423,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                         sortedVertexList.Sort((v1, v2) =>
                         {
                             if (v1.MeasuredPosition != v2.MeasuredPosition)
+                            {
                                 return Math.Sign(v1.MeasuredPosition - v2.MeasuredPosition);
+                            }
+
                             return v1.PermutationIndex - v2.PermutationIndex;
                         });
                     }
@@ -399,37 +438,49 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     nextAlternatingLayer.SetPositions();
                     realEdgePairs = ConvertRealEdgesToCrossCounterPairs(realEdges, true);
 
-                    var edgePairs = new List<CrossCounterPair>();
+                    List<CrossCounterPair> edgePairs = new List<CrossCounterPair>();
                     edgePairs.AddRange(virtualEdgePairs);
                     edgePairs.AddRange(realEdgePairs);
 
                     int crossCount = BiLayerCrossCount(edgePairs, firstLayerSize, secondLayerSize, cancellationToken);
 
                     if (reverseVerticesWithSameMeasure)
+                    {
                         return crossCount;
+                    }
 
                     //if the crosscount is better than the best known
                     //save the actual state
                     if (crossCount < bestCrossCount)
                     {
-                        foreach (var vertex in verticesWithSameMeasure)
+                        foreach (SugiVertex vertex in verticesWithSameMeasure)
+                        {
                             vertex.SavePositionToTemp();
+                        }
 
-                        foreach (var edge in realEdges)
+                        foreach (SugiEdge edge in realEdges)
+                        {
                             edge.SaveMarkedToTemp();
+                        }
 
                         bestCrossCount = crossCount;
                     }
                     if (crossCount == 0)
+                    {
                         break;
+                    }
                 } while (maxPermutations > 0 && Permutate(verticesWithSameMeasure, ranges));
 
                 //reload the best solution
-                foreach (var vertex in verticesWithSameMeasure)
+                foreach (SugiVertex vertex in verticesWithSameMeasure)
+                {
                     vertex.LoadPositionFromTemp();
+                }
 
-                foreach (var edge in realEdges)
+                foreach (SugiEdge edge in realEdges)
+                {
                     edge.LoadMarkedFromTemp();
+                }
 
                 //sort by permutation index and measure
                 sortedVertexList.Sort((v1, v2) => v1.Position - v2.Position);
@@ -441,7 +492,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 return bestCrossCount;
             }
             realEdgePairs = ConvertRealEdgesToCrossCounterPairs(realEdges, true);
-            var fEdgePairs = new List<CrossCounterPair>();
+            List<CrossCounterPair> fEdgePairs = new List<CrossCounterPair>();
             fEdgePairs.AddRange(virtualEdgePairs);
             fEdgePairs.AddRange(realEdgePairs);
 
@@ -456,9 +507,11 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             int reinsertIndex = 0;
             for (int i = 0; i < layer.Count; i++)
             {
-                var vertex = layer[i] as SugiVertex;
+                SugiVertex vertex = layer[i] as SugiVertex;
                 if (vertex == null || !vertexSet.Contains(vertex))
+                {
                     continue;
+                }
 
                 layer.RemoveAt(i);
                 layer.Insert(i, vertexList[reinsertIndex]);
@@ -468,11 +521,11 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private IList<CrossCounterPair> ConvertRealEdgesToCrossCounterPairs(IList<SugiEdge> edges, bool clearMark)
         {
-            var pairs = new List<CrossCounterPair>();
-            foreach (var edge in edges)
+            List<CrossCounterPair> pairs = new List<CrossCounterPair>();
+            foreach (SugiEdge edge in edges)
             {
-                var source = edge.Source;
-                var target = edge.Target;
+                SugiVertex source = edge.Source;
+                SugiVertex target = edge.Target;
                 pairs.Add(
                     new CrossCounterPair
                     {
@@ -484,21 +537,25 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     });
 
                 if (clearMark)
+                {
                     edge.Marked = false;
+                }
             }
             return pairs;
         }
 
         private IList<SugiEdge> FindRealEdges(AlternatingLayer topLayer, CancellationToken cancellationToken)
         {
-            var realEdges = new List<SugiEdge>();
-            foreach (var item in topLayer)
+            List<SugiEdge> realEdges = new List<SugiEdge>();
+            foreach (IData item in topLayer)
             {
-                var vertex = item as SugiVertex;
+                SugiVertex vertex = item as SugiVertex;
                 if (vertex == null || vertex.Type == VertexTypes.PVertex)
+                {
                     continue;
+                }
 
-                foreach (var edge in _graph.OutEdges(vertex))
+                foreach (SugiEdge edge in _graph.OutEdges(vertex))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -510,7 +567,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private IList<CrossCounterPair> FindVirtualEdgePairs(AlternatingLayer topLayer, AlternatingLayer bottomLayer)
         {
-            var virtualEdgePairs = new List<CrossCounterPair>();
+            List<CrossCounterPair> virtualEdgePairs = new List<CrossCounterPair>();
             Queue<VertexGroup> firstLayerQueue = GetContainerLikeItems(topLayer, VertexTypes.PVertex);
             Queue<VertexGroup> secondLayerQueue = GetContainerLikeItems(bottomLayer, VertexTypes.QVertex);
             VertexGroup vg1, vg2;
@@ -519,9 +576,15 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             while (firstLayerQueue.Count > 0 || secondLayerQueue.Count > 0)
             {
                 if (vg1.Size == 0)
+                {
                     vg1 = firstLayerQueue.Dequeue();
+                }
+
                 if (vg2.Size == 0)
+                {
                     vg2 = secondLayerQueue.Dequeue();
+                }
+
                 if (vg1.Size <= vg2.Size)
                 {
                     virtualEdgePairs.Add(
@@ -550,29 +613,33 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             return virtualEdgePairs;
         }
 
-        private bool Permutate(IList<SugiVertex> vertices, IList<int> ranges) 
+        private bool Permutate(IList<SugiVertex> vertices, IList<int> ranges)
         {
             Random rnd = new Random(Parameters.Seed);
             bool b = false;
-            for (int i = 0, startIndex = 0; i < ranges.Count; startIndex += ranges[i], i++) {
+            for (int i = 0, startIndex = 0; i < ranges.Count; startIndex += ranges[i], i++)
+            {
                 b = b || PermutateSomeHow(vertices, startIndex, ranges[i], rnd);
             }
             return b;
         }
 
-        private bool PermutateSomeHow(IList<SugiVertex> vertices, int startIndex, int count, Random rnd) 
+        private bool PermutateSomeHow(IList<SugiVertex> vertices, int startIndex, int count, Random rnd)
         {
-            if (count <= 4) {
+            if (count <= 4)
+            {
                 return Permutate(vertices, startIndex, count);
-            } else {
+            }
+            else
+            {
                 return PermutateRandom(vertices, startIndex, count, rnd);
             }
         }
 
-        private bool PermutateRandom(IList<SugiVertex> vertices, int startIndex, int count, Random rnd) 
+        private bool PermutateRandom(IList<SugiVertex> vertices, int startIndex, int count, Random rnd)
         {
             int endIndex = startIndex + count;
-            for (int i = startIndex; i < endIndex; i++) 
+            for (int i = startIndex; i < endIndex; i++)
             {
                 vertices[i].PermutationIndex = rnd.Next(count);
             }
@@ -588,16 +655,20 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             //find place to start
             for (i = n - 1;
                   i > startIndex && vertices[i - 1].PermutationIndex >= vertices[i].PermutationIndex;
-                  i--) { }
+                  i--)
+            { }
 
             //all in reverse order
             if (i < startIndex + 1)
+            {
                 return false; //no more permutation
+            }
 
             //do next permutation
             for (j = n;
                   j > startIndex + 1 && vertices[j - 1].PermutationIndex <= vertices[i - 1].PermutationIndex;
-                  j--) { }
+                  j--)
+            { }
 
             //swap values i-1, j-1
             int c = vertices[i - 1].PermutationIndex;
@@ -618,15 +689,18 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private static int BiLayerCrossCount(IEnumerable<CrossCounterPair> pairs, int firstLayerVertexCount, int secondLayerVertexCount, CancellationToken cancellationToken)
         {
             if (pairs == null)
+            {
                 return 0;
+            }
 
             //radix sort of the pair, order by First asc, Second asc
 
             #region Sort by Second ASC
-            var radixBySecond = new List<CrossCounterPair>[secondLayerVertexCount];
+
+            List<CrossCounterPair>[] radixBySecond = new List<CrossCounterPair>[secondLayerVertexCount];
             List<CrossCounterPair> r;
             int pairCount = 0;
-            foreach (var pair in pairs)
+            foreach (CrossCounterPair pair in pairs)
             {
                 //get the radix where the pair should be inserted
                 r = radixBySecond[pair.Second];
@@ -639,16 +713,20 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 pairCount = Math.Max(pairCount, pair.Second);
             }
             pairCount += 1;
-            #endregion
+
+            #endregion Sort by Second ASC
 
             #region Sort By First ASC
-            var radixByFirst = new List<CrossCounterPair>[firstLayerVertexCount];
-            foreach (var list in radixBySecond)
+
+            List<CrossCounterPair>[] radixByFirst = new List<CrossCounterPair>[firstLayerVertexCount];
+            foreach (List<CrossCounterPair> list in radixBySecond)
             {
                 if (list == null)
+                {
                     continue;
+                }
 
-                foreach (var pair in list)
+                foreach (CrossCounterPair pair in list)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -662,31 +740,39 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     r.Add(pair);
                 }
             }
-            #endregion
+
+            #endregion Sort By First ASC
 
             //
             // Build the accumulator tree
             //
             int firstIndex = 1;
             while (firstIndex < pairCount)
+            {
                 firstIndex *= 2;
+            }
+
             int treeSize = 2 * firstIndex - 1;
             firstIndex -= 1;
             CrossCounterTreeNode[] tree = new CrossCounterTreeNode[treeSize];
             for (int i = 0; i < treeSize; i++)
+            {
                 tree[i] = new CrossCounterTreeNode();
+            }
 
             //
             // Count the crossings
             //
             int crossCount = 0;
             int index;
-            foreach (var list in radixByFirst)
+            foreach (List<CrossCounterPair> list in radixByFirst)
             {
                 if (list == null)
+                {
                     continue;
+                }
 
-                foreach (var pair in list)
+                foreach (CrossCounterPair pair in list)
                 {
                     index = pair.Second + firstIndex;
                     tree[index].Accumulator += pair.Weight;
@@ -695,9 +781,11 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                         case EdgeTypes.InnerSegment:
                             tree[index].InnerSegmentMarker = true;
                             break;
+
                         case EdgeTypes.NonInnerSegment:
                             tree[index].NonInnerSegmentQueue.Enqueue(pair.NonInnerSegment);
                             break;
+
                         default:
                             break;
                     }
@@ -711,18 +799,20 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                             switch (pair.Type)
                             {
                                 case EdgeTypes.InnerSegment:
-                                    var queue = tree[index + 1].NonInnerSegmentQueue;
+                                    Queue<SugiEdge> queue = tree[index + 1].NonInnerSegmentQueue;
                                     while (queue.Count > 0)
                                     {
                                         queue.Dequeue().Marked = true;
                                     }
                                     break;
+
                                 case EdgeTypes.NonInnerSegment:
                                     if (tree[index + 1].InnerSegmentMarker)
                                     {
                                         pair.NonInnerSegment.Marked = true;
                                     }
                                     break;
+
                                 default:
                                     break;
                             }
@@ -734,9 +824,11 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                             case EdgeTypes.InnerSegment:
                                 tree[index].InnerSegmentMarker = true;
                                 break;
+
                             case EdgeTypes.NonInnerSegment:
                                 tree[index].NonInnerSegmentQueue.Enqueue(pair.NonInnerSegment);
                                 break;
+
                             default:
                                 break;
                         }
@@ -750,18 +842,20 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private static Queue<VertexGroup> GetContainerLikeItems(AlternatingLayer alternatingLayer, VertexTypes containerLikeVertexType)
         {
             Queue<VertexGroup> queue = new Queue<VertexGroup>();
-            foreach (var item in alternatingLayer)
+            foreach (IData item in alternatingLayer)
             {
-                var vertex = item as SugiVertex;
+                SugiVertex vertex = item as SugiVertex;
                 if (vertex != null && vertex.Type == containerLikeVertexType)
                 {
                     queue.Enqueue(new VertexGroup() { Position = vertex.Position, Size = 1 });
                 }
                 else if (vertex == null)
                 {
-                    var container = item as ISegmentContainer;
+                    ISegmentContainer container = item as ISegmentContainer;
                     if (container.Count > 0)
+                    {
                         queue.Enqueue(new VertexGroup() { Position = container.Position, Size = container.Count });
+                    }
                 }
             }
             return queue;
@@ -769,33 +863,39 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private void PlaceQVertices(AlternatingLayer alternatingLayer, IList<SugiVertex> nextLayer, bool straightSweep, CancellationToken cancellationToken)
         {
-            var type = straightSweep ? VertexTypes.QVertex : VertexTypes.PVertex;
-            var qVertices = new HashSet<SugiVertex>();
-            foreach (var vertex in nextLayer)
+            VertexTypes type = straightSweep ? VertexTypes.QVertex : VertexTypes.PVertex;
+            HashSet<SugiVertex> qVertices = new HashSet<SugiVertex>();
+            foreach (SugiVertex vertex in nextLayer)
             {
                 if (vertex.Type != type)
+                {
                     continue;
+                }
 
                 qVertices.Add(vertex);
             }
 
             for (int i = 0; i < alternatingLayer.Count; i++)
             {
-                var segmentContainer = alternatingLayer[i] as SegmentContainer;
+                SegmentContainer segmentContainer = alternatingLayer[i] as SegmentContainer;
                 if (segmentContainer == null)
+                {
                     continue;
+                }
+
                 for (int j = 0; j < segmentContainer.Count; j++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var segment = segmentContainer[j];
-                    var vertex = straightSweep ? segment.QVertex : segment.PVertex;
+                    Segment segment = segmentContainer[j];
+                    SugiVertex vertex = straightSweep ? segment.QVertex : segment.PVertex;
                     if (!qVertices.Contains(vertex))
+                    {
                         continue;
+                    }
 
                     alternatingLayer.RemoveAt(i);
-                    ISegmentContainer sc1, sc2;
-                    segmentContainer.Split(segment, out sc1, out sc2);
+                    segmentContainer.Split(segment, out ISegmentContainer sc1, out ISegmentContainer sc2);
                     sc1.Position = segmentContainer.Position;
                     sc2.Position = segmentContainer.Position + sc1.Count + 1;
                     alternatingLayer.Insert(i, sc1);
@@ -815,14 +915,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// <param name="straightSweep">If true, we are sweeping down else we're sweeping up.</param>
         private void AppendSegmentsToAlternatingLayer(AlternatingLayer alternatingLayer, bool straightSweep)
         {
-            var type = straightSweep ? VertexTypes.PVertex : VertexTypes.QVertex;
+            VertexTypes type = straightSweep ? VertexTypes.PVertex : VertexTypes.QVertex;
             for (int i = 1; i < alternatingLayer.Count; i += 2)
             {
-                var vertex = alternatingLayer[i] as SugiVertex;
+                SugiVertex vertex = alternatingLayer[i] as SugiVertex;
                 if (vertex.Type == type)
                 {
-                    var precedingContainer = alternatingLayer[i - 1] as SegmentContainer;
-                    var succeedingContainer = alternatingLayer[i + 1] as SegmentContainer;
+                    SegmentContainer precedingContainer = alternatingLayer[i - 1] as SegmentContainer;
+                    SegmentContainer succeedingContainer = alternatingLayer[i + 1] as SegmentContainer;
                     precedingContainer.Append(vertex.Segment);
                     precedingContainer.Join(succeedingContainer);
 
@@ -842,15 +942,15 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private AlternatingLayer InitialOrderingOfNextLayer(AlternatingLayer alternatingLayer, IList<SugiVertex> nextLayer, bool straightSweep)
         {
             //get the list of the containers and vertices
-            var segmentContainerStack = new Stack<ISegmentContainer>(alternatingLayer.OfType<ISegmentContainer>().Reverse());
-            var ignorableVertexType = straightSweep ? VertexTypes.QVertex : VertexTypes.PVertex;
-            var vertexStack = new Stack<SugiVertex>(nextLayer.Where(v => v.Type != ignorableVertexType).OrderBy(v => v.MeasuredPosition).Reverse());
-            var newAlternatingLayer = new AlternatingLayer();
+            Stack<ISegmentContainer> segmentContainerStack = new Stack<ISegmentContainer>(alternatingLayer.OfType<ISegmentContainer>().Reverse());
+            VertexTypes ignorableVertexType = straightSweep ? VertexTypes.QVertex : VertexTypes.PVertex;
+            Stack<SugiVertex> vertexStack = new Stack<SugiVertex>(nextLayer.Where(v => v.Type != ignorableVertexType).OrderBy(v => v.MeasuredPosition).Reverse());
+            AlternatingLayer newAlternatingLayer = new AlternatingLayer();
 
             while (vertexStack.Count > 0 && segmentContainerStack.Count > 0)
             {
-                var vertex = vertexStack.Peek();
-                var segmentContainer = segmentContainerStack.Peek();
+                SugiVertex vertex = vertexStack.Peek();
+                ISegmentContainer segmentContainer = segmentContainerStack.Peek();
                 if (vertex.MeasuredPosition <= segmentContainer.Position)
                 {
                     newAlternatingLayer.Add(vertexStack.Pop());
@@ -864,8 +964,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     vertexStack.Pop();
                     segmentContainerStack.Pop();
                     int k = (int)Math.Ceiling(vertex.MeasuredPosition - segmentContainer.Position);
-                    ISegmentContainer sc1, sc2;
-                    segmentContainer.Split(k, out sc1, out sc2);
+                    segmentContainer.Split(k, out ISegmentContainer sc1, out ISegmentContainer sc2);
                     newAlternatingLayer.Add(sc1);
                     newAlternatingLayer.Add(vertex);
                     sc2.Position = segmentContainer.Position + k;
@@ -873,15 +972,20 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 }
             }
             if (vertexStack.Count > 0)
+            {
                 newAlternatingLayer.AddRange(vertexStack.OfType<IData>());
+            }
+
             if (segmentContainerStack.Count > 0)
+            {
                 newAlternatingLayer.AddRange(segmentContainerStack.OfType<IData>());
+            }
 
             return newAlternatingLayer;
         }
 
         /// <summary>
-        /// Assigns the positions of the vertices and segment container 
+        /// Assigns the positions of the vertices and segment container
         /// on the actual layer.
         /// </summary>
         /// <param name="alternatingLayer">The actual layer (L_i).</param>
@@ -890,15 +994,15 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             //assign positions to vertices on the actualLayer (L_i)
             for (int i = 1; i < alternatingLayer.Count; i += 2)
             {
-                var precedingContainer = alternatingLayer[i - 1] as SegmentContainer;
-                var vertex = alternatingLayer[i] as SugiVertex;
+                SegmentContainer precedingContainer = alternatingLayer[i - 1] as SegmentContainer;
+                SugiVertex vertex = alternatingLayer[i] as SugiVertex;
                 if (i == 1)
                 {
                     vertex.Position = precedingContainer.Count;
                 }
                 else
                 {
-                    var previousVertex = alternatingLayer[i - 2] as SugiVertex;
+                    SugiVertex previousVertex = alternatingLayer[i - 2] as SugiVertex;
                     vertex.Position = previousVertex.Position + precedingContainer.Count + 1;
                 }
             }
@@ -906,14 +1010,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             //assign positions to containers on the actualLayer (L_i+1)
             for (int i = 0; i < alternatingLayer.Count; i += 2)
             {
-                var container = alternatingLayer[i] as SegmentContainer;
+                SegmentContainer container = alternatingLayer[i] as SegmentContainer;
                 if (i == 0)
                 {
                     container.Position = 0;
                 }
                 else
                 {
-                    var precedingVertex = alternatingLayer[i - 1] as SugiVertex;
+                    SugiVertex precedingVertex = alternatingLayer[i - 1] as SugiVertex;
                     container.Position = precedingVertex.Position + 1;
                 }
             }
@@ -923,27 +1027,31 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         {
             //measures of the containers is the same as their positions
             //so we should set the measures only for the vertices
-            foreach (var vertex in layer)
+            foreach (SugiVertex vertex in layer)
             {
                 if ((straightSweep && vertex.Type == VertexTypes.QVertex)
                     || (!straightSweep && vertex.Type == VertexTypes.PVertex))
+                {
                     continue;
+                }
 
-                var edges = straightSweep ? _graph.InEdges(vertex) : _graph.OutEdges(vertex);
-                var oldMeasuredPosition = vertex.MeasuredPosition;
+                IEnumerable<SugiEdge> edges = straightSweep ? _graph.InEdges(vertex) : _graph.OutEdges(vertex);
+                double oldMeasuredPosition = vertex.MeasuredPosition;
                 vertex.MeasuredPosition = 0;
                 vertex.DoNotOpt = false;
                 int count = 0;
-                foreach (var edge in edges)
+                foreach (SugiEdge edge in edges)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var otherVertex = edge.OtherVertex(vertex);
+                    SugiVertex otherVertex = edge.OtherVertex(vertex);
                     vertex.MeasuredPosition += otherVertex.Position;
                     count++;
                 }
                 if (count > 0)
+                {
                     vertex.MeasuredPosition /= count;
+                }
                 else
                 {
                     vertex.MeasuredPosition = oldMeasuredPosition;
@@ -954,4 +1062,3 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         }
     }
 }
-

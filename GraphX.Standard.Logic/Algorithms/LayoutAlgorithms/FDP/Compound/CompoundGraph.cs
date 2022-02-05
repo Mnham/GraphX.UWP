@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using QuikGraph;
+
+using System.Collections.Generic;
 using System.Linq;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -9,19 +10,16 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
     {
         public CompoundGraph()
         {
-
         }
 
         public CompoundGraph(bool allowParallelEdges)
             : base(allowParallelEdges)
         {
-
         }
 
         public CompoundGraph(bool allowParallelEdges, int vertexCapacity)
             : base(allowParallelEdges, vertexCapacity)
         {
-
         }
 
         public CompoundGraph(IBidirectionalGraph<TVertex, TEdge> graph)
@@ -41,12 +39,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             AddVertexRange(graph.Vertices);
 
             //copy the containment information
-            foreach (var vertex in graph.Vertices)
+            foreach (TVertex vertex in graph.Vertices)
             {
                 if (!graph.IsChildVertex(vertex))
+                {
                     continue;
+                }
 
-                var parent = graph.GetParent(vertex);
+                TVertex parent = graph.GetParent(vertex);
                 AddChildVertex(parent, vertex);
             }
 
@@ -60,24 +60,16 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private readonly IDictionary<TVertex, IList<TVertex>> _childrenRegistry =
             new Dictionary<TVertex, IList<TVertex>>();
 
-        public IEnumerable<TVertex> CompoundVertices
-        {
-            get
-            {
-                return _childrenRegistry.Keys;
-            }
-        }
+        public IEnumerable<TVertex> CompoundVertices => _childrenRegistry.Keys;
 
-        public IEnumerable<TVertex> SimpleVertices
-        {
-            get { return Vertices.Where(v => !_childrenRegistry.ContainsKey(v)); }
-        }
+        public IEnumerable<TVertex> SimpleVertices => Vertices.Where(v => !_childrenRegistry.ContainsKey(v));
 
         private IList<TVertex> GetChildrenList(TVertex vertex, bool createIfNotExists)
         {
-            IList<TVertex> childrenList;
-            if (_childrenRegistry.TryGetValue(vertex, out childrenList) || !createIfNotExists)
+            if (_childrenRegistry.TryGetValue(vertex, out IList<TVertex> childrenList) || !createIfNotExists)
+            {
                 return childrenList;
+            }
 
             childrenList = new List<TVertex>();
             _childrenRegistry[vertex] = childrenList;
@@ -89,7 +81,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         public bool AddChildVertex(TVertex parent, TVertex child)
         {
             if (!ContainsVertex(child))
+            {
                 AddVertex(child);
+            }
+
             _parentRegistry[child] = parent;
             GetChildrenList(parent, true).Add(child);
             return true;
@@ -99,7 +94,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         {
             int ret = AddVertexRange(children);
             IList<TVertex> childrenList = GetChildrenList(parent, true);
-            foreach (var v in children)
+            foreach (TVertex v in children)
             {
                 _parentRegistry[v] = parent;
                 childrenList.Add(v);
@@ -109,9 +104,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         public TVertex GetParent(TVertex vertex)
         {
-            TVertex parent;
-            if (_parentRegistry.TryGetValue(vertex, out parent))
+            if (_parentRegistry.TryGetValue(vertex, out TVertex parent))
+            {
                 return parent;
+            }
 
             return default(TVertex);
         }
@@ -130,7 +126,9 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         {
             IList<TVertex> childrenList = GetChildrenList(vertex, false);
             if (childrenList == null)
+            {
                 return 0;
+            }
 
             return childrenList.Count;
         }
@@ -140,7 +138,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             return GetChildrenList(vertex, false) != null;
         }
 
-        #endregion
+        #endregion ICompoundGraph<TVertex,TEdge> Members
 
         public override bool RemoveVertex(TVertex v)
         {

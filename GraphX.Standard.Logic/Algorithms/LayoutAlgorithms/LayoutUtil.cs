@@ -1,34 +1,37 @@
-﻿using System;
+﻿using GraphX.Measure;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using GraphX.Measure;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
-	[DebuggerDisplay("First = {First}, Second = {Second}")]
-	public class Pair
-	{
-		public int First;
-		public int Second;
+    [DebuggerDisplay("First = {First}, Second = {Second}")]
+    public class Pair
+    {
+        public int First;
+        public int Second;
         public int Weight = 1;
-	}
+    }
 
-	public static class LayoutUtil
-	{
-
-		public static int BiLayerCrossCount(IEnumerable<Pair> pairs, int firstLayerVertexCount, int secondLayerVertexCount)
+    public static class LayoutUtil
+    {
+        public static int BiLayerCrossCount(IEnumerable<Pair> pairs, int firstLayerVertexCount, int secondLayerVertexCount)
         {
             if (pairs == null)
+            {
                 return 0;
+            }
 
             //radix sort of the pair, order by First asc, Second asc
 
             #region Sort by Second ASC
-            var radixBySecond = new List<Pair>[secondLayerVertexCount];
+
+            List<Pair>[] radixBySecond = new List<Pair>[secondLayerVertexCount];
             List<Pair> r;
             int pairCount = 0;
-            foreach (var pair in pairs)
+            foreach (Pair pair in pairs)
             {
                 //get the radix where the pair should be inserted
                 r = radixBySecond[pair.Second];
@@ -40,16 +43,20 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 r.Add(pair);
                 pairCount++;
             }
-            #endregion
+
+            #endregion Sort by Second ASC
 
             #region Sort By First ASC
-            var radixByFirst = new List<Pair>[firstLayerVertexCount];
-            foreach (var list in radixBySecond)
+
+            List<Pair>[] radixByFirst = new List<Pair>[firstLayerVertexCount];
+            foreach (List<Pair> list in radixBySecond)
             {
                 if (list == null)
+                {
                     continue;
+                }
 
-                foreach (var pair in list)
+                foreach (Pair pair in list)
                 {
                     //get the radix where the pair should be inserted
                     r = radixByFirst[pair.First];
@@ -61,14 +68,18 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     r.Add(pair);
                 }
             }
-            #endregion
+
+            #endregion Sort By First ASC
 
             //
             // Build the accumulator tree
             //
             int firstIndex = 1;
             while (firstIndex < pairCount)
+            {
                 firstIndex *= 2;
+            }
+
             int treeSize = 2 * firstIndex - 1;
             firstIndex -= 1;
             int[] tree = new int[treeSize];
@@ -77,19 +88,24 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             // Count the crossings
             //
             int crossCount = 0;
-		    foreach (var list in radixByFirst)
+            foreach (List<Pair> list in radixByFirst)
             {
                 if (list == null)
-                    continue;
-
-                foreach (var pair in list)
                 {
-                    var index = pair.Second + firstIndex;
+                    continue;
+                }
+
+                foreach (Pair pair in list)
+                {
+                    int index = pair.Second + firstIndex;
                     tree[index] += pair.Weight;
                     while (index > 0)
                     {
                         if (index % 2 > 0)
+                        {
                             crossCount += tree[index + 1] * pair.Weight;
+                        }
+
                         index = (index - 1) / 2;
                         tree[index] += pair.Weight;
                     }
@@ -111,19 +127,23 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             for (int i = 0; i < 4; i++)
             {
                 if (sides[i] <= 1)
+                {
                     fi = Math.Max(fi, sides[i]);
+                }
             }
             if (fi == 0)
             {
                 fi = double.PositiveInfinity;
                 for (int i = 0; i < 4; i++)
+                {
                     fi = Math.Min(fi, Math.Abs(sides[i]));
+                }
+
                 fi *= -1;
             }
 
             return t + fi * (s - t);
         }
-
 
         public static bool IsSameDirection(Vector a, Vector b)
         {
@@ -144,7 +164,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             {
                 secondMap.Add(seconds[i], i);
             }
-            foreach (var pair in edgePairs)
+            foreach (Pair pair in edgePairs)
             {
                 pair.First = firstMap[pair.First];
                 pair.Second = secondMap[pair.Second];
@@ -152,6 +172,4 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             return BiLayerCrossCount(edgePairs, firsts.Length, seconds.Length);
         }
     }
-
-
 }

@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
-using GraphX.Measure;
+﻿using GraphX.Measure;
+
 using QuikGraph;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
-    public class CompoundLayoutContext<TVertex, TEdge, TGraph> 
+    public class CompoundLayoutContext<TVertex, TEdge, TGraph>
         : LayoutContext<TVertex, TEdge, TGraph>, ICompoundLayoutContext<TVertex, TEdge, TGraph>
         where TEdge : IEdge<TVertex>
         where TGraph : class, IBidirectionalGraph<TVertex, TEdge>
@@ -16,7 +18,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             LayoutMode mode,
             IDictionary<TVertex, Thickness> vertexBorders,
             IDictionary<TVertex, CompoundVertexInnerLayoutType> layoutTypes)
-            : base( graph, positions, sizes, mode )
+            : base(graph, positions, sizes, mode)
         {
             VertexBorders = vertexBorders;
             LayoutTypes = layoutTypes;

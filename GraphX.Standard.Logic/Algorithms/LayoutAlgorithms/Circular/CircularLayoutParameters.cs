@@ -1,7 +1,6 @@
 ﻿namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
-	public class CircularLayoutParameters : LayoutParametersBase
-	{
-		
-	}
+    public class CircularLayoutParameters : LayoutParametersBase
+    {
+    }
 }

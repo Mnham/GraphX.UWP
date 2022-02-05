@@ -1,6 +1,7 @@
+using GraphX.Measure;
+
 using System.Collections.Generic;
 using System.Threading;
-using GraphX.Measure;
 
 namespace GraphX.Common.Interfaces
 {
@@ -11,10 +12,11 @@ namespace GraphX.Common.Interfaces
     public interface IExternalOverlapRemoval<TVertex>
     {
         /// <summary>
-        /// Gets or sets vertices rectangle sizes 
+        /// Gets or sets vertices rectangle sizes
         /// This property is filled automaticaly before calculation in GenerateGraph()/RelayoutGraph() methods
         /// </summary>
         IDictionary<TVertex, Rect> Rectangles { get; set; }
+
         /// <summary>
         /// Implements algorithm computation
         /// </summary>

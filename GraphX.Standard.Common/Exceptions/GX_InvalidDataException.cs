@@ -2,9 +2,9 @@
 
 namespace GraphX.Common.Exceptions
 {
-    public sealed class GX_InvalidDataException: Exception
+    public sealed class GX_InvalidDataException : Exception
     {
-        public GX_InvalidDataException(string text):base(text)
+        public GX_InvalidDataException(string text) : base(text)
         {
         }
     }

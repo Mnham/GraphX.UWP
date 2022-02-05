@@ -1,146 +1,149 @@
-﻿using System;
-using GraphX.Measure;
+﻿using GraphX.Measure;
+
 using QuikGraph;
+
+using System;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
-	public partial class LinLogLayoutAlgorithm<TVertex, TEdge, TGraph> 
-		where TVertex : class
-		where TEdge : IEdge<TVertex>
+    public partial class LinLogLayoutAlgorithm<TVertex, TEdge, TGraph>
+        where TVertex : class
+        where TEdge : IEdge<TVertex>
         where TGraph : IBidirectionalGraph<TVertex, TEdge>, IMutableVertexAndEdgeSet<TVertex, TEdge>
-	{
-		class QuadTree
-		{
-			#region Properties
-			private readonly QuadTree[] _children = new QuadTree[4];
-			public QuadTree[] Children
-			{
-				get { return _children; }
-			}
+    {
+        private class QuadTree
+        {
+            #region Properties
 
-		    public int Index { get; private set; }
+            private readonly QuadTree[] _children = new QuadTree[4];
+            public QuadTree[] Children => _children;
 
-		    private Point _position;
+            public int Index { get; private set; }
 
-			public Point Position
-			{
-				get { return _position; }
-			}
+            private Point _position;
 
-		    public double Weight { get; private set; }
+            public Point Position => _position;
 
-		    private Point _minPos;
-			private Point _maxPos;
+            public double Weight { get; private set; }
 
-			#endregion
+            private Point _minPos;
+            private Point _maxPos;
 
-			public double Width
-			{
-				get
-				{
-					return Math.Max( _maxPos.X - _minPos.X, _maxPos.Y - _minPos.Y );
-				}
-			}
+            #endregion Properties
 
-		    private const int MAX_DEPTH = 20;
+            public double Width => Math.Max(_maxPos.X - _minPos.X, _maxPos.Y - _minPos.Y);
 
-			public QuadTree( int index, Point position, double weight, Point minPos, Point maxPos )
-			{
-				Index = index;
-				_position = position;
-				Weight = weight;
-				_minPos = minPos;
-				_maxPos = maxPos;
-			}
+            private const int MAX_DEPTH = 20;
 
-			public void AddNode( int nodeIndex, Point nodePos, double nodeWeight, int depth )
-			{
-				if ( depth > MAX_DEPTH )
-					return;
+            public QuadTree(int index, Point position, double weight, Point minPos, Point maxPos)
+            {
+                Index = index;
+                _position = position;
+                Weight = weight;
+                _minPos = minPos;
+                _maxPos = maxPos;
+            }
 
-				if ( Index >= 0 )
-				{
-					AddNode2( Index, _position, Weight, depth );
-					Index = -1;
-				}
+            public void AddNode(int nodeIndex, Point nodePos, double nodeWeight, int depth)
+            {
+                if (depth > MAX_DEPTH)
+                {
+                    return;
+                }
 
-				_position.X = ( _position.X * Weight + nodePos.X * nodeWeight ) / ( Weight + nodeWeight );
-				_position.Y = ( _position.Y * Weight + nodePos.Y * nodeWeight ) / ( Weight + nodeWeight );
-				Weight += nodeWeight;
+                if (Index >= 0)
+                {
+                    AddNode2(Index, _position, Weight, depth);
+                    Index = -1;
+                }
 
-				AddNode2( nodeIndex, nodePos, nodeWeight, depth );
-			}
+                _position.X = (_position.X * Weight + nodePos.X * nodeWeight) / (Weight + nodeWeight);
+                _position.Y = (_position.Y * Weight + nodePos.Y * nodeWeight) / (Weight + nodeWeight);
+                Weight += nodeWeight;
 
-		    private void AddNode2( int nodeIndex, Point nodePos, double nodeWeight, int depth )
-			{
-				//Debug.WriteLine( string.Format( "AddNode2 {0} {1} {2} {3}", nodeIndex, nodePos, nodeWeight, depth ) );
-				var childIndex = 0;
-				var middleX = ( _minPos.X + _maxPos.X ) / 2;
-				var middleY = ( _minPos.Y + _maxPos.Y ) / 2;
+                AddNode2(nodeIndex, nodePos, nodeWeight, depth);
+            }
 
-				if ( nodePos.X > middleX )
-					childIndex += 1;
+            private void AddNode2(int nodeIndex, Point nodePos, double nodeWeight, int depth)
+            {
+                //Debug.WriteLine( string.Format( "AddNode2 {0} {1} {2} {3}", nodeIndex, nodePos, nodeWeight, depth ) );
+                int childIndex = 0;
+                double middleX = (_minPos.X + _maxPos.X) / 2;
+                double middleY = (_minPos.Y + _maxPos.Y) / 2;
 
-				if ( nodePos.Y > middleY )
-					childIndex += 2;
+                if (nodePos.X > middleX)
+                {
+                    childIndex += 1;
+                }
 
-				//Debug.WriteLine( string.Format( "childIndex: {0}", childIndex ) );               
+                if (nodePos.Y > middleY)
+                {
+                    childIndex += 2;
+                }
 
+                //Debug.WriteLine( string.Format( "childIndex: {0}", childIndex ) );
 
-				if ( _children[childIndex] == null )
-				{
-					var newMin = new Point();
-					var newMax = new Point();
-					if ( nodePos.X <= middleX )
-					{
-						newMin.X = _minPos.X;
-						newMax.X = middleX;
-					}
-					else
-					{
-						newMin.X = middleX;
-						newMax.X = _maxPos.X;
-					}
-					if ( nodePos.Y <= middleY )
-					{
-						newMin.Y = _minPos.Y;
-						newMax.Y = middleY;
-					}
-					else
-					{
-						newMin.Y = middleY;
-						newMax.Y = _maxPos.Y;
-					}
-					_children[childIndex] = new QuadTree( nodeIndex, nodePos, nodeWeight, newMin, newMax );
-				}
-				else
-				{
-					_children[childIndex].AddNode( nodeIndex, nodePos, nodeWeight, depth + 1 );
-				}
-			}
+                if (_children[childIndex] == null)
+                {
+                    Point newMin = new Point();
+                    Point newMax = new Point();
+                    if (nodePos.X <= middleX)
+                    {
+                        newMin.X = _minPos.X;
+                        newMax.X = middleX;
+                    }
+                    else
+                    {
+                        newMin.X = middleX;
+                        newMax.X = _maxPos.X;
+                    }
+                    if (nodePos.Y <= middleY)
+                    {
+                        newMin.Y = _minPos.Y;
+                        newMax.Y = middleY;
+                    }
+                    else
+                    {
+                        newMin.Y = middleY;
+                        newMax.Y = _maxPos.Y;
+                    }
+                    _children[childIndex] = new QuadTree(nodeIndex, nodePos, nodeWeight, newMin, newMax);
+                }
+                else
+                {
+                    _children[childIndex].AddNode(nodeIndex, nodePos, nodeWeight, depth + 1);
+                }
+            }
 
-			/// <summary>
-			/// Az adott rész pozícióját újraszámítja, levonva belőle a mozgatott node részét.
-			/// </summary>
-			/// <param name="oldPos"></param>
-			/// <param name="newPos"></param>
-			/// <param name="nodeWeight"></param>
-			public void MoveNode( Point oldPos, Point newPos, double nodeWeight )
-			{
-				_position += ( ( newPos - oldPos ) * ( nodeWeight / Weight ) );
+            /// <summary>
+            /// Az adott rész pozícióját újraszámítja, levonva belőle a mozgatott node részét.
+            /// </summary>
+            /// <param name="oldPos"></param>
+            /// <param name="newPos"></param>
+            /// <param name="nodeWeight"></param>
+            public void MoveNode(Point oldPos, Point newPos, double nodeWeight)
+            {
+                _position += ((newPos - oldPos) * (nodeWeight / Weight));
 
-				var childIndex = 0;
-				var middleX = ( _minPos.X + _maxPos.X ) / 2;
-				var middleY = ( _minPos.Y + _maxPos.Y ) / 2;
+                int childIndex = 0;
+                double middleX = (_minPos.X + _maxPos.X) / 2;
+                double middleY = (_minPos.Y + _maxPos.Y) / 2;
 
-				if ( oldPos.X > middleX )
-					childIndex += 1;
-				if ( oldPos.Y > middleY )
-					childIndex += 1 << 1;
+                if (oldPos.X > middleX)
+                {
+                    childIndex += 1;
+                }
 
-				if ( _children[childIndex] != null )
-					_children[childIndex].MoveNode( oldPos, newPos, nodeWeight );
-			}
-		}
-	}
+                if (oldPos.Y > middleY)
+                {
+                    childIndex += 1 << 1;
+                }
+
+                if (_children[childIndex] != null)
+                {
+                    _children[childIndex].MoveNode(oldPos, newPos, nodeWeight);
+                }
+            }
+        }
+    }
 }

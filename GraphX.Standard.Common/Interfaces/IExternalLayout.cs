@@ -1,6 +1,7 @@
+using GraphX.Measure;
+
 using System.Collections.Generic;
 using System.Threading;
-using GraphX.Measure;
 
 namespace GraphX.Common.Interfaces
 {

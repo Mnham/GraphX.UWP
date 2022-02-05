@@ -1,85 +1,49 @@
-using System.Collections.Generic;
 using GraphX.Measure;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.EdgeRouting
 {
-    interface IPathFinder
+    internal interface IPathFinder
     {
         #region Events
+
         event PathFinderDebugHandler PathFinderDebug;
-        #endregion
+
+        #endregion Events
 
         #region Properties
-        bool Stopped
-        {
-            get;
-        }
 
-        HeuristicFormula Formula
-        {
-            get;
-            set;
-        }
+        bool Stopped { get; }
 
-        bool Diagonals
-        {
-            get;
-            set;
-        }
+        HeuristicFormula Formula { get; set; }
 
-        bool HeavyDiagonals
-        {
-            get;
-            set;
-        }
+        bool Diagonals { get; set; }
 
-        int HeuristicEstimate
-        {
-            get;
-            set;
-        }
+        bool HeavyDiagonals { get; set; }
 
-        bool PunishChangeDirection
-        {
-            get;
-            set;
-        }
+        int HeuristicEstimate { get; set; }
 
-        bool TieBreaker
-        {
-            get;
-            set;
-        }
+        bool PunishChangeDirection { get; set; }
 
-        int SearchLimit
-        {
-            get;
-            set;
-        }
+        bool TieBreaker { get; set; }
 
-        double CompletedTime
-        {
-            get;
-            set;
-        }
+        int SearchLimit { get; set; }
 
-        bool DebugProgress
-        {
-            get;
-            set;
-        }
+        double CompletedTime { get; set; }
 
-        bool DebugFoundPath
-        {
-            get;
-            set;
-        }
-        #endregion
+        bool DebugProgress { get; set; }
+
+        bool DebugFoundPath { get; set; }
+
+        #endregion Properties
 
         #region Methods
-        void FindPathStop();
-        List<PathFinderNode> FindPath(Point start, Point end);
-        #endregion
 
+        void FindPathStop();
+
+        List<PathFinderNode> FindPath(Point start, Point end);
+
+        #endregion Methods
     }
 }

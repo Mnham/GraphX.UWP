@@ -8,6 +8,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
     public class BoundedFRLayoutParameters : FRLayoutParametersBase
     {
         #region Properties, Parameters
+
         //some of the parameters declared with 'internal' modifier to 'speed up'
 
         private double _width = 1000;
@@ -19,12 +20,13 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// </summary>
         public double Width
         {
-            get { return _width; }
+            get => _width;
             set
             {
-                _width = value;
-                UpdateParameters();
-                NotifyPropertyChanged("Width");
+                if (SetProperty(ref _width, value))
+                {
+                    UpdateParameters();
+                }
             }
         }
 
@@ -33,38 +35,33 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// </summary>
         public double Height
         {
-            get { return _height; }
+            get => _height;
             set
             {
-                _height = value;
-                UpdateParameters();
-                NotifyPropertyChanged("Height");
+                if (SetProperty(ref _height, value))
+                {
+                    UpdateParameters();
+                }
             }
         }
 
         /// <summary>
         /// Constant. <code>IdealEdgeLength = sqrt(height * width / vertexCount)</code>
         /// </summary>
-        public override double K
-        {
-            get { return _k; }
-        }
+        public override double K => _k;
 
         /// <summary>
         /// Gets the initial temperature of the mass.
         /// </summary>
-        public override double InitialTemperature
-        {
-            get { return Math.Min(Width, Height) / 10; }
-        }
+        public override double InitialTemperature => Math.Min(Width, Height) / 10;
 
         protected override void UpdateParameters()
         {
             _k = Math.Sqrt(_width * Height / VertexCount);
-            NotifyPropertyChanged("K");
+            OnPropertyChanged(nameof(K));
             base.UpdateParameters();
         }
 
-        #endregion
+        #endregion Properties, Parameters
     }
 }

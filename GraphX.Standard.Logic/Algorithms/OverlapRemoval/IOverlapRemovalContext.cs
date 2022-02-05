@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
-using GraphX.Measure;
+﻿using GraphX.Measure;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.OverlapRemoval
 {
-	public interface IOverlapRemovalContext<TVertex>
-	{
-		IDictionary<TVertex, Rect> Rectangles { get; }
-	}
+    public interface IOverlapRemovalContext<TVertex>
+    {
+        IDictionary<TVertex, Rect> Rectangles { get; }
+    }
 }

@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
-using GraphX.Common.Interfaces;
+﻿using GraphX.Common.Interfaces;
+
 using QuikGraph;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -12,14 +14,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         protected interface ISegmentContainer : IEnumerable<Segment>, IData, ICloneable
         {
             /// <summary>
-            /// Appends the segment <paramref name="s"/> to the end of the 
+            /// Appends the segment <paramref name="s"/> to the end of the
             /// container.
             /// </summary>
             /// <param name="s">The segment to append.</param>
             void Append(Segment s);
 
             /// <summary>
-            /// Appends all elements of the container <paramref name="sc"/> to 
+            /// Appends all elements of the container <paramref name="sc"/> to
             /// this container.
             /// </summary>
             /// <param name="sc"></param>
@@ -27,10 +29,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
             /// <summary>
             /// Split this container at segment <paramref name="s"/> into two contsiners
-            /// <paramref name="sc1"/> and <paramref name="sc2"/>. 
+            /// <paramref name="sc1"/> and <paramref name="sc2"/>.
             /// All elements less than s are stored in container <paramref name="sc1"/> and
             /// those who are greated than <paramref name="s"/> in <paramref name="sc2"/>.
-            /// Element <paramref name="s"/> is neither in <paramref name="sc1"/> or 
+            /// Element <paramref name="s"/> is neither in <paramref name="sc1"/> or
             /// <paramref name="sc2"/>.
             /// </summary>
             /// <param name="s">The segment to split at.</param>
@@ -59,8 +61,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         //http://www.link.cs.cmu.edu/link/ftp-site/splaying/SplayTree.java
         protected class SegmentContainer : List<Segment>, ISegmentContainer
         {
+            public SegmentContainer()
+            {
+            }
 
-            public SegmentContainer() { }
             public SegmentContainer(int capacity)
                 : base(capacity) { }
 
@@ -108,28 +112,33 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 sc2 = new SegmentContainer(sc2Count);
 
                 for (int i = 0; i < sc1Count; i++)
+                {
                     sc1.Append(this[i]);
+                }
 
                 for (int i = k + 1; i < Count; i++)
+                {
                     sc2.Append(this[i]);
+                }
             }
-            #endregion
+
+            #endregion ISegmentContainer Members
 
             #region IData Members
 
             //TODO get them from the first element of the container, MAYBE!
             public int Position { get; set; }
 
-            #endregion
+            #endregion IData Members
 
             #region ICloneable Members
 
             public object Clone()
             {
-                return this.MemberwiseClone();
+                return MemberwiseClone();
             }
 
-            #endregion
+            #endregion ICloneable Members
         }
     }
 }

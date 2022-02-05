@@ -1,11 +1,12 @@
+using GraphX.Common.Interfaces;
+using GraphX.Measure;
+
 using System;
 using System.Collections.Generic;
-using GraphX.Measure;
-using GraphX.Common.Interfaces;
 
 namespace GraphX.Common.Models
 {
-    public sealed class GraphState<TVertex, TEdge, TGraph>: IDisposable
+    public sealed class GraphState<TVertex, TEdge, TGraph> : IDisposable
     {
         /// <summary>
         /// Graph state unique identificator
@@ -39,9 +40,9 @@ namespace GraphX.Common.Models
 
         public GraphState(string id, TGraph graph, IAlgorithmStorage<TVertex, TEdge> storage, Dictionary<TVertex, Point> vPos, List<TEdge> vEdges, string description = "")
         {
-            ID = id; 
-            Graph = graph; 
-            Description = description; 
+            ID = id;
+            Graph = graph;
+            Description = description;
             VertexPositions = vPos;
             VisibleEdges = vEdges;
             AlgorithmStorage = storage;
@@ -49,7 +50,7 @@ namespace GraphX.Common.Models
 
         public void Dispose()
         {
-            Graph = default(TGraph);
+            Graph = default;
             VertexPositions.Clear();
             VisibleEdges.Clear();
             AlgorithmStorage = null;

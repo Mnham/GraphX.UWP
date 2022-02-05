@@ -1,7 +1,7 @@
 ﻿namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
-	public class EfficientSugiyamaLayoutParameters : LayoutParametersBase
-	{
+    public class EfficientSugiyamaLayoutParameters : LayoutParametersBase
+    {
         private LayoutDirection _direction = LayoutDirection.TopToBottom;
         private double _layerDistance = 15.0;
         private double _vertexDistance = 15.0;
@@ -17,106 +17,50 @@
         /// </summary>
         public LayoutDirection Direction
         {
-            get { return _direction; }
-            set
-            {
-                if (value == _direction)
-                    return;
-
-                _direction = value;
-                NotifyPropertyChanged("Direction");
-            }
+            get => _direction;
+            set => SetProperty(ref _direction, value);
         }
 
         public double LayerDistance
         {
-            get { return _layerDistance; }
-            set
-            {
-                if (value == _layerDistance)
-                    return;
-
-                _layerDistance = value;
-                NotifyPropertyChanged("LayerDistance");
-            }
+            get => _layerDistance;
+            set => SetProperty(ref _layerDistance, value);
         }
 
         public double VertexDistance
         {
-            get { return _vertexDistance; }
-            set
-            {
-                if (value == _vertexDistance)
-                    return;
-
-                _vertexDistance = value;
-                NotifyPropertyChanged("VertexDistance");
-            }
+            get => _vertexDistance;
+            set => SetProperty(ref _vertexDistance, value);
         }
 
         public int PositionMode
         {
-            get { return _positionMode; }
-            set
-            {
-                if (value == _positionMode)
-                    return;
-
-                _positionMode = value;
-                NotifyPropertyChanged("PositionMode");
-            }
+            get => _positionMode;
+            set => SetProperty(ref _positionMode, value);
         }
 
         public double WidthPerHeight
         {
-            get { return _widthPerHeight; }
-            set
-            {
-                if (value == _widthPerHeight)
-                    return;
-
-                _widthPerHeight = value;
-                NotifyPropertyChanged("WidthPerHeight");
-            }
+            get => _widthPerHeight;
+            set => SetProperty(ref _widthPerHeight, value);
         }
 
         public bool OptimizeWidth
         {
-            get { return _optimizeWidth; }
-            set
-            {
-                if (value == _optimizeWidth)
-                    return;
-
-                _optimizeWidth = value;
-                NotifyPropertyChanged("OptimizeWidth");
-            }
+            get => _optimizeWidth;
+            set => SetProperty(ref _optimizeWidth, value);
         }
 
         public bool MinimizeEdgeLength
         {
-            get { return _minimizeEdgeLength; }
-            set
-            {
-                if (value == _minimizeEdgeLength)
-                    return;
-
-                _minimizeEdgeLength = value;
-                NotifyPropertyChanged("MinimizeEdgeLength");
-            }
+            get => _minimizeEdgeLength;
+            set => SetProperty(ref _minimizeEdgeLength, value);
         }
 
         public SugiyamaEdgeRoutings EdgeRouting
         {
-            get { return _edgeRouting; }
-            set
-            {
-                if (value == _edgeRouting)
-                    return;
-
-                _edgeRouting = value;
-                NotifyPropertyChanged("EdgeRouting");
-            }
+            get => _edgeRouting;
+            set => SetProperty(ref _edgeRouting, value);
         }
-	}
+    }
 }

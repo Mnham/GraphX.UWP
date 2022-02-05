@@ -1,5 +1,5 @@
-﻿using GraphX.Measure;
-using GraphX.Common.Interfaces;
+﻿using GraphX.Common.Interfaces;
+using GraphX.Measure;
 
 namespace GraphX.Common.Models
 {
@@ -14,6 +14,6 @@ namespace GraphX.Common.Models
         public Point TargetPosition { get; set; }
         public Size TargetSize { get; set; }
 
-        IRoutingInfo Edge { get; set; }
+        public IRoutingInfo Edge { get; set; }
     }
 }

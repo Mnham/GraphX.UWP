@@ -8,10 +8,12 @@ namespace GraphX.Logic.Algorithms.EdgeRouting
         /// Controls horizontal grid density. Smaller the value more points will be available.
         /// </summary>
         public double HorizontalGridSize { get; set; }
+
         /// <summary>
         /// Controls vertical grid density. Smaller the value more points will be available.
         /// </summary>
         public double VerticalGridSize { get; set; }
+
         /// <summary>
         /// Offset from the each side to enlarge grid and leave additional space for routing.
         /// </summary>
@@ -21,31 +23,36 @@ namespace GraphX.Logic.Algorithms.EdgeRouting
         /// Use diagonal point connections while searching for the path.
         /// </summary>
         public bool UseDiagonals { get; set; }
+
         /// <summary>
         /// Algorithm used to search for the path.
         /// </summary>
         public PathFindAlgorithm PathFinderAlgorithm { get; set; }
+
         /// <summary>
         /// Gets or sets if direction change is unpreferable
         /// </summary>
         public bool PunishChangeDirection { get; set; }
+
         /// <summary>
         /// Gets or sets if diagonal shortcuts must be preferred
         /// </summary>
         public bool UseHeavyDiagonals { get; set; }
+
         /// <summary>
         /// Heuristic level
         /// </summary>
         public int Heuristic { get; set; }
+
         /// <summary>
         /// Use special formula for tie breaking
         /// </summary>
         public bool UseTieBreaker { get; set; }
+
         /// <summary>
         /// Maximum number of tries
         /// </summary>
         public int SearchTriesLimit { get; set; }
-
 
         public PathFinderEdgeRoutingParameters()
         {
@@ -60,7 +67,6 @@ namespace GraphX.Logic.Algorithms.EdgeRouting
             UseTieBreaker = false;
             SearchTriesLimit = 50000;
         }
-
     }
 
     public enum PathFindAlgorithm

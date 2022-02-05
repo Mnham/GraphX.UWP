@@ -1,22 +1,23 @@
-﻿using System.Collections.Generic;
-using GraphX.Measure;
+﻿using GraphX.Measure;
+
+using System.Collections.Generic;
 
 namespace GraphX.Common.Interfaces
 {
     public interface IOverlapRemovalAlgorithm<TObject> : IExternalOverlapRemoval<TObject>
-	{
-		IOverlapRemovalParameters GetParameters();
+    {
+        IOverlapRemovalParameters GetParameters();
 
         /// <summary>
         /// Initialize algorithm initial data
         /// </summary>
         /// <param name="rectangles">Size rectangles</param>
         void Initialize(IDictionary<TObject, Rect> rectangles);
-	}
+    }
 
-	public interface IOverlapRemovalAlgorithm<TObject, TParam> : IOverlapRemovalAlgorithm<TObject>
-		where TParam : IOverlapRemovalParameters
-	{
+    public interface IOverlapRemovalAlgorithm<TObject, TParam> : IOverlapRemovalAlgorithm<TObject>
+        where TParam : IOverlapRemovalParameters
+    {
         /// <summary>
         /// Algorithm parameters
         /// </summary>
@@ -28,5 +29,5 @@ namespace GraphX.Common.Interfaces
         /// <param name="rectangles">Size rectangles</param>
         /// <param name="parameters">algorithm parameters</param>
 	    void Initialize(IDictionary<TObject, Rect> rectangles, TParam parameters);
-	}
+    }
 }

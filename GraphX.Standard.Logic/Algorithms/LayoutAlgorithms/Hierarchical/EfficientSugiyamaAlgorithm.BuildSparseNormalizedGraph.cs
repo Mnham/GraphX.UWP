@@ -1,9 +1,11 @@
-﻿using System;
+﻿using GraphX.Common.Exceptions;
+
+using QuikGraph;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using GraphX.Common.Exceptions;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -31,11 +33,17 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 get
                 {
                     if (Value < 0)
+                    {
                         return double.NaN;
+                    }
                     else if (Cost <= 0)
+                    {
                         return double.PositiveInfinity;
+                    }
                     else
+                    {
                         return Value / Cost;
+                    }
                 }
             }
         }
@@ -44,10 +52,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private double _actualWidth;
         private double _actualHeight;
 
-        private double _actualWidthPerHeight
-        {
-            get { return _actualWidth / _actualHeight; }
-        }
+        private double _actualWidthPerHeight => _actualWidth / _actualHeight;
 
         private readonly IList<WHOptimizationLayerInfo> _whOptLayerInfos =
             new List<WHOptimizationLayerInfo>();
@@ -63,7 +68,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         {
             CreateInitialLayering(cancellationToken);
             if (Parameters.OptimizeWidth)
+            {
                 DoWidthAndHeightOptimization(cancellationToken);
+            }
+
             CreateDummyVerticesAndSegments();
             RemoveParallelEdges(cancellationToken);
         }
@@ -74,9 +82,11 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             CreateLayerWHOptInfos(cancellationToken);
 
             if (_actualWidthPerHeight <= Parameters.WidthPerHeight)
+            {
                 return;
+            }
 
-            bool optimized = false;
+            bool optimized;
             do
             {
                 optimized = DoWHOptimizationStep();
@@ -87,9 +97,9 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private void RewriteLayerIndexes(CancellationToken cancellationToken)
         {
             int i = 0;
-            foreach (var layer in _layers)
+            foreach (IList<SugiVertex> layer in _layers)
             {
-                foreach (var vertex in layer)
+                foreach (SugiVertex vertex in layer)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -104,7 +114,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             double desiredWidth = _actualHeight * Parameters.WidthPerHeight;
 
             int maxWidthLayerIndex = 0;
-            var maxWidthLayer = _whOptLayerInfos[0];
+            WHOptimizationLayerInfo maxWidthLayer = _whOptLayerInfos[0];
             for (int i = 0; i < _whOptLayerInfos.Count; i++)
             {
                 if (_whOptLayerInfos[i].LayerWidth > maxWidthLayer.LayerWidth
@@ -117,7 +127,9 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             }
 
             if (maxWidthLayer.LayerWidth <= desiredWidth || maxWidthLayer.Vertices.Count <= 0)
+            {
                 return false;
+            }
 
             //get a layer nearby the maxWidthLayer
             int insertedLayerIndex = -1;
@@ -139,7 +151,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 double c = 0;
                 if (insertedLayerIndex > 0)
                 {
-                    foreach (var vertex in _layers[insertedLayerIndex - 1])
+                    foreach (SugiVertex vertex in _layers[insertedLayerIndex - 1])
                     {
                         width += Math.Max(0, _graph.OutDegree(vertex) - 1) * Parameters.LayerDistance;
                     }
@@ -147,20 +159,26 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 }
                 if (insertedLayerIndex < _layers.Count - 1)
                 {
-                    foreach (var vertex in _layers[insertedLayerIndex])
+                    foreach (SugiVertex vertex in _layers[insertedLayerIndex])
                     {
                         width += Math.Max(0, _graph.OutDegree(vertex) - 1) * Parameters.LayerDistance;
                     }
                     c += 1;
                 }
                 if (c > 0)
+                {
                     width /= c;
+                }
 
                 if (width >= (desiredWidth - _whOptLayerInfos[insertedLayerIndex - 1].Vertices.Peek().Cost))
+                {
                     return false;
+                }
 
-                insertedLayerInfo = new WHOptimizationLayerInfo();
-                insertedLayerInfo.LayerWidth = width;
+                insertedLayerInfo = new WHOptimizationLayerInfo
+                {
+                    LayerWidth = width
+                };
                 insertedLayer = new List<SugiVertex>();
                 _whOptLayerInfos.Insert(insertedLayerIndex, insertedLayerInfo);
                 _layers.Insert(insertedLayerIndex, insertedLayer);
@@ -170,7 +188,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     && _whOptLayerInfos[insertedLayerIndex - 1].Vertices.Count > 0
                     && insertedLayerInfo.LayerWidth <= (desiredWidth - _whOptLayerInfos[insertedLayerIndex - 1].Vertices.Peek().Cost))
                 {
-                    var repositionedVertex = _whOptLayerInfos[insertedLayerIndex - 1].Vertices.Dequeue();
+                    WHOptimizationVertexInfo repositionedVertex = _whOptLayerInfos[insertedLayerIndex - 1].Vertices.Dequeue();
                     insertedLayerInfo.LayerWidth += repositionedVertex.Cost;
                     _whOptLayerInfos[insertedLayerIndex - 1].LayerWidth -= repositionedVertex.Value;
                     _layers[insertedLayerIndex - 1].Remove(repositionedVertex.Vertex);
@@ -181,7 +199,6 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 _actualWidth = _whOptLayerInfos.Max(li => li.LayerWidth);
             }
 
-
             return true;
         }
 
@@ -189,38 +206,43 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         {
             _actualHeight = 0;
             _actualWidth = 0;
-            foreach (var layer in _layers)
+            foreach (IList<SugiVertex> layer in _layers)
             {
-                var layerInfo = new WHOptimizationLayerInfo();
-                layerInfo.IsInsertedLayer = false;
-                foreach (var vertex in layer)
+                WHOptimizationLayerInfo layerInfo = new WHOptimizationLayerInfo
+                {
+                    IsInsertedLayer = false
+                };
+                foreach (SugiVertex vertex in layer)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     layerInfo.LayerHeight = Math.Max(vertex.Size.Height, layerInfo.LayerHeight);
                     layerInfo.LayerWidth += vertex.Size.Width;
-                    WHOptimizationVertexInfo vertexInfo;
-                    if (_whOptVertexInfos.TryGetValue(vertex, out vertexInfo))
+                    if (_whOptVertexInfos.TryGetValue(vertex, out WHOptimizationVertexInfo vertexInfo))
                     {
                         if (vertexInfo.ValuePerCost >= 0)
+                        {
                             layerInfo.Vertices.Enqueue(vertexInfo);
+                        }
                     }
                 }
                 layerInfo.LayerWidth += Math.Max(0, layer.Count - 1) * Parameters.VertexDistance;
                 _actualWidth = Math.Max(layerInfo.LayerWidth, _actualWidth);
-                var vertexList = new List<WHOptimizationVertexInfo>();
-                foreach (var v in layerInfo.Vertices)
+                List<WHOptimizationVertexInfo> vertexList = new List<WHOptimizationVertexInfo>();
+                foreach (WHOptimizationVertexInfo v in layerInfo.Vertices)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     if (!double.IsNaN(v.ValuePerCost) && !double.IsPositiveInfinity(v.ValuePerCost) && !double.IsNegativeInfinity(v.ValuePerCost))
+                    {
                         vertexList.Add(v);
+                    }
                 }
                 vertexList.Sort(new Comparison<WHOptimizationVertexInfo>(
                     (v1, v2) => Math.Sign(v2.ValuePerCost - v1.ValuePerCost)));
                 _actualHeight += layerInfo.LayerHeight + Parameters.LayerDistance;
                 layerInfo.Vertices.Clear();
-                foreach (var v in vertexList)
+                foreach (WHOptimizationVertexInfo v in vertexList)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -235,15 +257,19 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private void CreateVertexWHOptInfos()
         {
             double vertexCount = 0;
-            foreach (var vertex in _graph.Vertices)
+            foreach (SugiVertex vertex in _graph.Vertices)
             {
                 if (vertex.Type != VertexTypes.Original)
+                {
                     continue;
+                }
 
-                var whOptInfo = new WHOptimizationVertexInfo();
-                whOptInfo.Value = vertex.Size.Width - Math.Max(0, _graph.InDegree(vertex) - 1) * Parameters.VertexDistance;
-                whOptInfo.Cost = vertex.Size.Width - Math.Max(0, _graph.OutDegree(vertex) - 1) * Parameters.VertexDistance;
-                whOptInfo.Vertex = vertex;
+                WHOptimizationVertexInfo whOptInfo = new WHOptimizationVertexInfo
+                {
+                    Value = vertex.Size.Width - Math.Max(0, _graph.InDegree(vertex) - 1) * Parameters.VertexDistance,
+                    Cost = vertex.Size.Width - Math.Max(0, _graph.OutDegree(vertex) - 1) * Parameters.VertexDistance,
+                    Vertex = vertex
+                };
                 _whOptVertexInfos[vertex] = whOptInfo;
                 vertexCount++;
                 _whAverageVertexHeight += vertex.Size.Height;
@@ -253,22 +279,24 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private void RemoveParallelEdges(CancellationToken cancellationToken)
         {
-            foreach (var vertex in _graph.Vertices)
+            foreach (SugiVertex vertex in _graph.Vertices)
             {
-                var targets = new HashSet<SugiVertex>();
-                foreach (var edge in _graph.OutEdges(vertex).ToArray())
+                HashSet<SugiVertex> targets = new HashSet<SugiVertex>();
+                foreach (SugiEdge edge in _graph.OutEdges(vertex).ToArray())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     if (targets.Contains(edge.Target))
+                    {
                         _graph.RemoveEdge(edge);
+                    }
                 }
             }
         }
 
         private void CreateInitialLayering(CancellationToken cancellationToken)
         {
-            var lts = new LayeredTopologicalSortAlgorithm<SugiVertex, SugiEdge>(_graph);
+            LayeredTopologicalSortAlgorithm<SugiVertex, SugiEdge> lts = new LayeredTopologicalSortAlgorithm<SugiVertex, SugiEdge>(_graph);
             lts.Compute();
 
             for (int i = 0; i < lts.LayerCount; i++)
@@ -277,7 +305,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 _layers.Add(lts.Layers[i].ToList());
 
                 //assign the layerindex
-                foreach (var v in _layers[i])
+                foreach (SugiVertex v in _layers[i])
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     v.LayerIndex = i;
@@ -289,12 +317,15 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             {
                 for (int i = _layers.Count - 1; i >= 0; i--)
                 {
-                    var layer = _layers[i];
-                    foreach (var v in layer.ToList())
+                    IList<SugiVertex> layer = _layers[i];
+                    foreach (SugiVertex v in layer.ToList())
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        if (_graph.OutDegree(v) == 0) continue;
+                        if (_graph.OutDegree(v) == 0)
+                        {
+                            continue;
+                        }
 
                         //put the vertex above the descendant on the highest layer
                         int newLayerIndex = _graph.OutEdges(v).Min(edge => edge.Target.LayerIndex - 1);
@@ -317,25 +348,29 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// </summary>
         private void CreateDummyVerticesAndSegments()
         {
-            foreach (var edge in _graph.Edges.ToList())
+            foreach (SugiEdge edge in _graph.Edges.ToList())
             {
                 int sourceLayerIndex = edge.Source.LayerIndex;
                 int targetLayerIndex = edge.Target.LayerIndex;
                 int span = targetLayerIndex - sourceLayerIndex;
                 if (span < 1)
+                {
                     throw new ArgumentException("span cannot be lower than 1");
+                }
 
                 if (span == 1)
+                {
                     continue;
+                }
 
                 _graph.RemoveEdge(edge);
                 bool notReversed = edge.Source.OriginalVertex == edge.OriginalEdge.Source && edge.Target.OriginalVertex == edge.OriginalEdge.Target;
-                var dummyVertexList = new List<SugiVertex>();
+                List<SugiVertex> dummyVertexList = new List<SugiVertex>();
                 _dummyVerticesOfEdges[edge.OriginalEdge] = dummyVertexList;
                 if (span == 2)
                 {
                     //insert an R-vertex
-                    var rVertex = AddDummyVertex(VertexTypes.RVertex, sourceLayerIndex + 1);
+                    SugiVertex rVertex = AddDummyVertex(VertexTypes.RVertex, sourceLayerIndex + 1);
                     _graph.AddEdge(new SugiEdge(edge.OriginalEdge, edge.Source, rVertex));
                     _graph.AddEdge(new SugiEdge(edge.OriginalEdge, rVertex, edge.Target));
                     dummyVertexList.Add(rVertex);
@@ -343,8 +378,8 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 else
                 {
                     //insert a P-vertex, a Q-vertex and a Segment
-                    var pVertex = AddDummyVertex(VertexTypes.PVertex, sourceLayerIndex + 1);
-                    var qVertex = AddDummyVertex(VertexTypes.QVertex, targetLayerIndex - 1);
+                    SugiVertex pVertex = AddDummyVertex(VertexTypes.PVertex, sourceLayerIndex + 1);
+                    SugiVertex qVertex = AddDummyVertex(VertexTypes.QVertex, targetLayerIndex - 1);
                     if (notReversed)
                     {
                         dummyVertexList.Add(pVertex);
@@ -357,7 +392,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     }
                     _graph.AddEdge(new SugiEdge(edge.OriginalEdge, edge.Source, pVertex));
                     _graph.AddEdge(new SugiEdge(edge.OriginalEdge, qVertex, edge.Target));
-                    var segment = AddSegment(pVertex, qVertex, edge);
+                    AddSegment(pVertex, qVertex, edge);
                 }
             }
         }
@@ -372,7 +407,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// <returns>The newly created segment.</returns>
         private Segment AddSegment(SugiVertex pVertex, SugiVertex qVertex, SugiEdge edge)
         {
-            var segment = new Segment()
+            Segment segment = new Segment()
             {
                 PVertex = pVertex,
                 QVertex = qVertex
@@ -391,7 +426,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         /// layers.</returns>
         private SugiVertex AddDummyVertex(VertexTypes type, int layerIndex)
         {
-            var vertex = new SugiVertex()
+            SugiVertex vertex = new SugiVertex()
             {
                 Type = type,
                 LayerIndex = layerIndex
@@ -405,7 +440,10 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         public override void ResetGraph(IEnumerable<TVertex> vertices, IEnumerable<TEdge> edges)
         {
             if (VisitedGraph == null && !TryCreateNewGraph())
+            {
                 throw new GX_GeneralException("Can't create new graph through reflection. Make sure it support default constructor.");
+            }
+
             VisitedGraph.Clear();
             VisitedGraph.AddVertexRange(vertices);
             VisitedGraph.AddEdgeRange(edges);

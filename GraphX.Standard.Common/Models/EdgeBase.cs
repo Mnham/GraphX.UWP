@@ -1,6 +1,6 @@
-﻿using GraphX.Measure;
-using GraphX.Common.Enums;
+﻿using GraphX.Common.Enums;
 using GraphX.Common.Interfaces;
+using GraphX.Measure;
 
 namespace GraphX.Common.Models
 {
@@ -8,7 +8,7 @@ namespace GraphX.Common.Models
     /// Base class for graph edge
     /// </summary>
     /// <typeparam name="TVertex">Vertex class</typeparam>
-    public abstract class EdgeBase<TVertex> : IGraphXEdge<TVertex>
+    public abstract class EdgeBase<TVertex> : ObservableObject, IGraphXEdge<TVertex>
     {
         /// <summary>
         /// Skip edge in algo calc and visualization
@@ -17,7 +17,6 @@ namespace GraphX.Common.Models
 
         protected EdgeBase(TVertex source, TVertex target, double weight = 1)
         {
-
             Source = source;
             Target = target;
             Weight = weight;
@@ -64,9 +63,9 @@ namespace GraphX.Common.Models
         /// </summary>
         public double Weight { get; set; }
 
-		/// <summary>
-		/// Reverse the calculated routing path points.
-		/// </summary>
-		public bool ReversePath { get; set; }
+        /// <summary>
+        /// Reverse the calculated routing path points.
+        /// </summary>
+        public bool ReversePath { get; set; }
     }
 }

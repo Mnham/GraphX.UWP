@@ -1,114 +1,116 @@
-﻿using System.Diagnostics;
-using GraphX.Measure;
+﻿using GraphX.Measure;
+
 using QuikGraph;
+
+using System.Diagnostics;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
-	public partial class SugiyamaLayoutAlgorithm<TVertex, TEdge, TGraph> 
-        where TVertex : class 
+    public partial class SugiyamaLayoutAlgorithm<TVertex, TEdge, TGraph>
+        where TVertex : class
         where TEdge : IEdge<TVertex>
         where TGraph : IVertexAndEdgeListGraph<TVertex, TEdge>, IMutableVertexAndEdgeSet<TVertex, TEdge>
-	{
-		[DebuggerDisplay( "{Original} [{LayerIndex}] Pos={Position} Meas={Measure} RealPos={RealPosition}" )]
-		private class SugiVertex : WrappedVertex<TVertex>
-		{
-			//Constants
-			public const int UNDEFINED_LAYER_INDEX = -1;
-			public const int UNDEFINED_POSITION = -1;
+    {
+        [DebuggerDisplay("{Original} [{LayerIndex}] Pos={Position} Meas={Measure} RealPos={RealPosition}")]
+        private class SugiVertex : WrappedVertex<TVertex>
+        {
+            //Constants
+            public const int UNDEFINED_LAYER_INDEX = -1;
 
-			//Private fields
-			private int _layerIndex = UNDEFINED_LAYER_INDEX;
+            public const int UNDEFINED_POSITION = -1;
 
-			//Public fields
-			/// <summary>
-			/// The position of the vertex inside the layer.
-			/// </summary>
-			public int Position;
+            //Private fields
+            private int _layerIndex = UNDEFINED_LAYER_INDEX;
 
-			/// <summary>
-			/// The measure of the vertex (up/down-barycenter/median depends on the implementation).
-			/// </summary>
-			public double Measure;
+            //Public fields
+            /// <summary>
+            /// The position of the vertex inside the layer.
+            /// </summary>
+            public int Position;
 
-			/// <summary>
-			/// The real position (x and y coordinates) of the vertex.
-			/// </summary>
-			public Point RealPosition;
+            /// <summary>
+            /// The measure of the vertex (up/down-barycenter/median depends on the implementation).
+            /// </summary>
+            public double Measure;
 
-			/// <summary>
-			/// Used in the algorithms for temporary storage.
-			/// </summary>
-			public double Temp;
+            /// <summary>
+            /// The real position (x and y coordinates) of the vertex.
+            /// </summary>
+            public Point RealPosition;
 
-			/// <summary>
-			/// Size of the vertex.
-			/// </summary>
-			public Size Size;
+            /// <summary>
+            /// Used in the algorithms for temporary storage.
+            /// </summary>
+            public double Temp;
 
-			/// <summary>
-			/// The index of the layer where this vertex belongs to.
-			/// </summary>
-			public int LayerIndex
-			{
-				get { return _layerIndex; }
-				set
-				{
-					if ( _layerIndex != value )
-					{
-						//change the index
-						_layerIndex = value;
+            /// <summary>
+            /// Size of the vertex.
+            /// </summary>
+            public Size Size;
 
-						//add to the new layer
-						if ( _layerIndex == UNDEFINED_LAYER_INDEX )
-							Position = UNDEFINED_POSITION;
-					}
-				}
-			}
+            /// <summary>
+            /// The index of the layer where this vertex belongs to.
+            /// </summary>
+            public int LayerIndex
+            {
+                get => _layerIndex;
+                set
+                {
+                    if (_layerIndex != value)
+                    {
+                        //change the index
+                        _layerIndex = value;
 
-			/// <summary>
-			/// Gets that this vertex is a dummy vertex (a point of a replaced long edge) or not.
-			/// </summary>
-			public bool IsDummyVertex
-			{
-				get { return Original == null; }
-			}
+                        //add to the new layer
+                        if (_layerIndex == UNDEFINED_LAYER_INDEX)
+                        {
+                            Position = UNDEFINED_POSITION;
+                        }
+                    }
+                }
+            }
 
-			/// <summary>
-			/// The priority of the vertex. Used in the horizontal position assignment phase.
-			/// The dummy vertices has maximal priorities (because the dummy edge should be as vertical as possible).
-			/// The other vertices priority based on it's edge count.
-			/// </summary>
-			public int Priority;
+            /// <summary>
+            /// Gets that this vertex is a dummy vertex (a point of a replaced long edge) or not.
+            /// </summary>
+            public bool IsDummyVertex => Original == null;
 
-			/// <summary>
-			/// Represents the subpriority of this vertex between the vertices with the same priority.
-			/// </summary>
-			public int SubPriority;
+            /// <summary>
+            /// The priority of the vertex. Used in the horizontal position assignment phase.
+            /// The dummy vertices has maximal priorities (because the dummy edge should be as vertical as possible).
+            /// The other vertices priority based on it's edge count.
+            /// </summary>
+            public int Priority;
 
-			public int PermutationIndex;
+            /// <summary>
+            /// Represents the subpriority of this vertex between the vertices with the same priority.
+            /// </summary>
+            public int SubPriority;
 
-			#region Maybe not needed
+            public int PermutationIndex;
 
-			public int LeftGeneralEdgeCount;
-			public int RightGeneralEdgeCount;
+            #region Maybe not needed
 
-			#endregion
+            public int LeftGeneralEdgeCount;
+            public int RightGeneralEdgeCount;
 
-			/// <summary>
-			/// Constructor of the vertex.
-			/// </summary>
-			/// <param name="originalVertex">The object which is wrapped by this ComplexVertex.</param>
-			/// <param name="size">The size of the original vertex.</param>
-			public SugiVertex( TVertex originalVertex, Size size )
-				: base( originalVertex )
-			{
-				Size = size;
-			}
+            #endregion Maybe not needed
 
-			public override string ToString()
-			{
-				return ( Original == null ? "Dummy" : Original.ToString() ) + " [" + LayerIndex + "]";
-			}
-		}
-	}
+            /// <summary>
+            /// Constructor of the vertex.
+            /// </summary>
+            /// <param name="originalVertex">The object which is wrapped by this ComplexVertex.</param>
+            /// <param name="size">The size of the original vertex.</param>
+            public SugiVertex(TVertex originalVertex, Size size)
+                : base(originalVertex)
+            {
+                Size = size;
+            }
+
+            public override string ToString()
+            {
+                return (Original == null ? "Dummy" : Original.ToString()) + " [" + LayerIndex + "]";
+            }
+        }
+    }
 }

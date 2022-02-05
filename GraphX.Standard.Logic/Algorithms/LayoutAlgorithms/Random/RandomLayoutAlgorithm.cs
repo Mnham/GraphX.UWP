@@ -1,12 +1,14 @@
-﻿using System;
+﻿using GraphX.Common.Enums;
+using GraphX.Common.Exceptions;
+using GraphX.Common.Interfaces;
+using GraphX.Measure;
+
+using QuikGraph;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using GraphX.Measure;
-using GraphX.Common.Enums;
-using GraphX.Common.Exceptions;
-using GraphX.Common.Interfaces;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -32,40 +34,36 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         public override void Compute(CancellationToken cancellationToken)
         {
             VertexPositions.Clear();
-            var bounds = _parameters == null ? new RandomLayoutAlgorithmParams().Bounds : _parameters.Bounds;
-            var boundsWidth = (int)bounds.Width;
-            var boundsHeight = (int)bounds.Height;
-            var seed = _parameters == null ? Guid.NewGuid().GetHashCode() : _parameters.Seed;
-            var rnd = new Random(seed);
-            foreach (var item in VisitedGraph.Vertices)
+            Rect bounds = _parameters == null ? new RandomLayoutAlgorithmParams().Bounds : _parameters.Bounds;
+            int boundsWidth = (int)bounds.Width;
+            int boundsHeight = (int)bounds.Height;
+            int seed = _parameters == null ? Guid.NewGuid().GetHashCode() : _parameters.Seed;
+            Random rnd = new Random(seed);
+            foreach (TVertex item in VisitedGraph.Vertices)
             {
                 if (item.SkipProcessing != ProcessingOptionEnum.Freeze || VertexPositions.Count == 0)
                 {
-                    var x = (int) bounds.X;
-                    var y = (int) bounds.Y;
-                    var size = VertexSizes.FirstOrDefault(a => a.Key == item).Value;
+                    int x = (int)bounds.X;
+                    int y = (int)bounds.Y;
+                    Size size = VertexSizes.FirstOrDefault(a => a.Key == item).Value;
                     VertexPositions.Add(item,
-                        new Point(rnd.Next(x, x + boundsWidth - (int) size.Width),
-                            rnd.Next(y, y + boundsHeight - (int) size.Height)));
+                        new Point(rnd.Next(x, x + boundsWidth - (int)size.Width),
+                            rnd.Next(y, y + boundsHeight - (int)size.Height)));
                 }
             }
-           
         }
 
-        public override bool NeedVertexSizes
-        {
-            get { return true; }
-        }
+        public override bool NeedVertexSizes => true;
 
-        public override bool SupportsObjectFreeze
-        {
-            get { return true; }
-        }
+        public override bool SupportsObjectFreeze => true;
 
         public override void ResetGraph(IEnumerable<TVertex> vertices, IEnumerable<TEdge> edges)
         {
             if (VisitedGraph == null && !TryCreateNewGraph())
+            {
                 throw new GX_GeneralException("Can't create new graph through reflection. Make sure it support default constructor.");
+            }
+
             VisitedGraph.Clear();
             VisitedGraph.AddVertexRange(vertices);
             VisitedGraph.AddEdgeRange(edges);

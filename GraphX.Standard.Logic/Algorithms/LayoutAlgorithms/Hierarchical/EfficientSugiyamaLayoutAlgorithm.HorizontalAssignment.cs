@@ -1,9 +1,11 @@
-﻿using System;
+﻿using GraphX.Common;
+using GraphX.Measure;
+
+using QuikGraph;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using GraphX.Measure;
-using GraphX.Common;
-using QuikGraph;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {
@@ -37,13 +39,24 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             CalculateVerticalPositions();
 
             if (Parameters.PositionMode < 0 || Parameters.PositionMode == 0)
+            {
                 CalculateHorizontalPositions(LeftRightMode.Left, UpperLowerEdges.Upper);
+            }
+
             if (Parameters.PositionMode < 0 || Parameters.PositionMode == 1)
+            {
                 CalculateHorizontalPositions(LeftRightMode.Right, UpperLowerEdges.Upper);
+            }
+
             if (Parameters.PositionMode < 0 || Parameters.PositionMode == 2)
+            {
                 CalculateHorizontalPositions(LeftRightMode.Left, UpperLowerEdges.Lower);
+            }
+
             if (Parameters.PositionMode < 0 || Parameters.PositionMode == 3)
+            {
                 CalculateHorizontalPositions(LeftRightMode.Right, UpperLowerEdges.Lower);
+            }
 
             CalculateRealPositions();
             SavePositions();
@@ -56,32 +69,33 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 case SugiyamaEdgeRoutings.Traditional:
                     DoTraditionalEdgeRouting();
                     break;
+
                 case SugiyamaEdgeRoutings.Orthogonal:
                     DoOrthogonalEdgeRouting(offsetY);
                     break;
+
                 default:
                     break;
             }
-
         }
 
         private void DoOrthogonalEdgeRouting(double offsetY)
         {
-            foreach (var edge in VisitedGraph.Edges)
+            foreach (TEdge edge in VisitedGraph.Edges)
             {
-                var sourcePosition = VertexPositions[edge.Source];
-                var targetPosition = VertexPositions[edge.Target];
-                var sourceSize = _vertexSizes[edge.Source];
-                var targetSize = _vertexSizes[edge.Target];
+                Point sourcePosition = VertexPositions[edge.Source];
+                Point targetPosition = VertexPositions[edge.Target];
+                Size sourceSize = _vertexSizes[edge.Source];
+                Size targetSize = _vertexSizes[edge.Target];
 
-                if ((Parameters.Direction == LayoutDirection.TopToBottom ||  Parameters.Direction == LayoutDirection.BottomToTop) && sourcePosition.X != targetPosition.X)
+                if ((Parameters.Direction == LayoutDirection.TopToBottom || Parameters.Direction == LayoutDirection.BottomToTop) && sourcePosition.X != targetPosition.X)
                 {
-                    var pt = new Point(targetPosition.X + targetSize.Width/2, sourcePosition.Y + sourceSize.Height/2);
-                    var src = new Point(sourcePosition.X + sourceSize.Width/2, sourcePosition.Y + sourceSize.Height/2);
-                    
+                    Point pt = new Point(targetPosition.X + targetSize.Width / 2, sourcePosition.Y + sourceSize.Height / 2);
+                    Point src = new Point(sourcePosition.X + sourceSize.Width / 2, sourcePosition.Y + sourceSize.Height / 2);
+
                     if (Parameters.Direction == LayoutDirection.TopToBottom)
                     {
-                        var pt2 = new Point(targetPosition.X + targetSize.Width/2, targetPosition.Y);
+                        Point pt2 = new Point(targetPosition.X + targetSize.Width / 2, targetPosition.Y);
                         _edgeRoutingPoints[edge] =
                             new[]
                             {
@@ -92,7 +106,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     }
                     else
                     {
-                        var pt2 = new Point(targetPosition.X + targetSize.Width / 2, targetPosition.Y + targetSize.Height / 2);
+                        Point pt2 = new Point(targetPosition.X + targetSize.Width / 2, targetPosition.Y + targetSize.Height / 2);
                         _edgeRoutingPoints[edge] =
                             new[]
                             {
@@ -104,11 +118,11 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 }
                 else if ((Parameters.Direction == LayoutDirection.LeftToRight || Parameters.Direction == LayoutDirection.RightToLeft) && sourcePosition.Y != targetPosition.Y)
                 {
-                    var src = new Point(sourcePosition.X + sourceSize.Width / 2, sourcePosition.Y + sourceSize.Height/2);
-                    var pt = new Point(sourcePosition.X + sourceSize.Width/2, targetPosition.Y + targetSize.Height/2);
+                    Point src = new Point(sourcePosition.X + sourceSize.Width / 2, sourcePosition.Y + sourceSize.Height / 2);
+                    Point pt = new Point(sourcePosition.X + sourceSize.Width / 2, targetPosition.Y + targetSize.Height / 2);
                     if (Parameters.Direction == LayoutDirection.LeftToRight)
                     {
-                        var pt2 = new Point(targetPosition.X, targetPosition.Y + targetSize.Height / 2);
+                        Point pt2 = new Point(targetPosition.X, targetPosition.Y + targetSize.Height / 2);
                         _edgeRoutingPoints[edge] =
                             new[]
                             {
@@ -119,7 +133,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     }
                     else
                     {
-                        var pt2 = new Point(targetPosition.X + targetSize.Width, targetPosition.Y + targetSize.Height / 2);
+                        Point pt2 = new Point(targetPosition.X + targetSize.Width, targetPosition.Y + targetSize.Height / 2);
                         _edgeRoutingPoints[edge] =
                             new[]
                             {
@@ -129,81 +143,95 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                             };
                     }
                 }
-                else _edgeRoutingPoints[edge] = null;
+                else
+                {
+                    _edgeRoutingPoints[edge] = null;
+                }
             }
         }
 
         private void DoTraditionalEdgeRouting()
         {
-            foreach (var kvp in _dummyVerticesOfEdges)
+            foreach (KeyValuePair<TEdge, IList<SugiVertex>> kvp in _dummyVerticesOfEdges)
             {
-                var routePoints = new Point[kvp.Value.Count];
+                Point[] routePoints = new Point[kvp.Value.Count];
                 for (int i = 0; i < kvp.Value.Count; i++)
                 {
-                    var vertex = kvp.Value[i];
+                    SugiVertex vertex = kvp.Value[i];
                     routePoints[i] = new Point(vertex.HorizontalPosition, vertex.VerticalPosition);
                 }
                 _edgeRoutingPoints[kvp.Key] = routePoints;
             }
-
         }
 
         private void SavePositions()
         {
-            foreach (var vertex in _graph.Vertices)
+            foreach (SugiVertex vertex in _graph.Vertices)
             {
                 if (vertex.Type == VertexTypes.Original)
+                {
                     VertexPositions[vertex.OriginalVertex] = new Point(vertex.HorizontalPosition, vertex.VerticalPosition);
+                }
             }
-
         }
 
         private void PutbackIsolatedVertices()
         {
             _graph.AddVertexRange(_isolatedVertices);
-            if (_isolatedVertices.Count < 2) return;
+            if (_isolatedVertices.Count < 2)
+            {
+                return;
+            }
+
             _sparseCompactionGraph.AddVertexRange(_isolatedVertices.OfType<Data>());
-            
-			// Note: _sparseCompactionByLayerBackup will be empty if no edges exist.
-			if (_sparseCompactionByLayerBackup.Any())
-			{
-				int layer = 0;
-				SugiVertex prevIsolatedVertex = null;
-				foreach (var isolatedVertex in _isolatedVertices)
-				{
-					var lastOnLayer = _sparseCompactionByLayerBackup[layer].LastOrDefault();
-					_layers[layer].Add(isolatedVertex);
-					isolatedVertex.LayerIndex = layer;
-					isolatedVertex.Position = _layers[layer].Count - 1;
-					if (lastOnLayer != null)
-					{
-						var edge = new Edge<Data>(lastOnLayer.Target, isolatedVertex);
-						_sparseCompactionByLayerBackup[layer].Add(edge);
-						_sparseCompactionGraph.AddEdge(edge);
-					}
-					if (layer > 0 && prevIsolatedVertex != null)
-					{
-						_graph.AddEdge(new SugiEdge(default(TEdge), prevIsolatedVertex, isolatedVertex));
-					}
-					layer = (layer + 1) % _layers.Count;
-					prevIsolatedVertex = isolatedVertex;
-				}
-			}
+
+            // Note: _sparseCompactionByLayerBackup will be empty if no edges exist.
+            if (_sparseCompactionByLayerBackup.Any())
+            {
+                int layer = 0;
+                SugiVertex prevIsolatedVertex = null;
+                foreach (SugiVertex isolatedVertex in _isolatedVertices)
+                {
+                    Edge<Data> lastOnLayer = _sparseCompactionByLayerBackup[layer].LastOrDefault();
+                    _layers[layer].Add(isolatedVertex);
+                    isolatedVertex.LayerIndex = layer;
+                    isolatedVertex.Position = _layers[layer].Count - 1;
+                    if (lastOnLayer != null)
+                    {
+                        Edge<Data> edge = new Edge<Data>(lastOnLayer.Target, isolatedVertex);
+                        _sparseCompactionByLayerBackup[layer].Add(edge);
+                        _sparseCompactionGraph.AddEdge(edge);
+                    }
+                    if (layer > 0 && prevIsolatedVertex != null)
+                    {
+                        _graph.AddEdge(new SugiEdge(default(TEdge), prevIsolatedVertex, isolatedVertex));
+                    }
+                    layer = (layer + 1) % _layers.Count;
+                    prevIsolatedVertex = isolatedVertex;
+                }
+            }
         }
 
         private void CalculateLayerHeightsAndPositions()
         {
-            if (_layers.Count == 0) return;
+            if (_layers.Count == 0)
+            {
+                return;
+            }
+
             _layerHeights = new double[_layers.Count];
             for (int i = 0; i < _layers.Count; i++)
+            {
                 _layerHeights[i] = _layers[i].Max(v => v.Size.Height);
+            }
 
             double layerDistance = Parameters.LayerDistance;
             _layerPositions = new double[_layers.Count];
             _layerPositions[0] = 0;
             for (int i = 1; i < _layers.Count; i++)
+            {
                 _layerPositions[i] = _layerPositions[i - 1] + _layerHeights[i - 1] + layerDistance;
-
+            }
         }
 
         private void CalculateRealPositions()
@@ -215,7 +243,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             }
             else
             {
-                foreach (var vertex in _graph.Vertices)
+                foreach (SugiVertex vertex in _graph.Vertices)
                 {
                     /*Debug.WriteLine(string.Format("{0}:\t{1}\t{2}\t{3}\t{4}",
                         vertex.OriginalVertex,
@@ -228,7 +256,8 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                         vertex.HorizontalPosition =
                             (vertex.HorizontalPositions[0] + vertex.HorizontalPositions[1]
                              + vertex.HorizontalPositions[2] + vertex.HorizontalPositions[3]) / 4.0;
-                    } else
+                    }
+                    else
                     {
                         vertex.HorizontalPosition = vertex.HorizontalPositions[Parameters.PositionMode];
                     }
@@ -238,21 +267,23 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private void CalculateVerticalPositions()
         {
-			// Note: _layerPositions will be empty if no edges exist.
-			if (_layerPositions != null && _layerHeights != null)
-			{
-				foreach (var vertex in _graph.Vertices)
-					vertex.VerticalPosition = _layerPositions[vertex.LayerIndex] + (vertex.Size.Height <= 0 ? _layerHeights[vertex.LayerIndex] : vertex.Size.Height) / 2.0;
-			}
-			else
-			{
-				var vertPos = 0;
-				foreach (var sugiVertex in _graph.Vertices)
-				{
-					sugiVertex.VerticalPosition = vertPos;
-					vertPos += 100; // Just default to a value that will visually look OK for the graph surface.
-				}
-			}
+            // Note: _layerPositions will be empty if no edges exist.
+            if (_layerPositions != null && _layerHeights != null)
+            {
+                foreach (SugiVertex vertex in _graph.Vertices)
+                {
+                    vertex.VerticalPosition = _layerPositions[vertex.LayerIndex] + (vertex.Size.Height <= 0 ? _layerHeights[vertex.LayerIndex] : vertex.Size.Height) / 2.0;
+                }
+            }
+            else
+            {
+                int vertPos = 0;
+                foreach (SugiVertex sugiVertex in _graph.Vertices)
+                {
+                    sugiVertex.VerticalPosition = vertPos;
+                    vertPos += 100; // Just default to a value that will visually look OK for the graph surface.
+                }
+            }
         }
 
         /// <summary>
@@ -263,10 +294,12 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private void CalculateHorizontalPositions(LeftRightMode leftRightMode, UpperLowerEdges upperLowerEdges)
         {
             if (_graph.Vertices.Count() == 1)
+            {
                 _graph.Vertices.First().HorizontalPosition = 0;
+            }
             else
             {
-                int modeIndex = (byte) upperLowerEdges * 2 + (byte) leftRightMode;
+                int modeIndex = (byte)upperLowerEdges * 2 + (byte)leftRightMode;
                 InitializeRootsAndAligns(modeIndex);
                 DoAlignment(modeIndex, leftRightMode, upperLowerEdges);
                 WriteOutAlignment(modeIndex);
@@ -293,7 +326,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private void InitializeSinksAndShifts(int modeIndex)
         {
-            foreach (var vertex in _graph.Vertices)
+            foreach (SugiVertex vertex in _graph.Vertices)
             {
                 vertex.Sinks[modeIndex] = vertex;
                 vertex.Shifts[modeIndex] = double.PositiveInfinity;
@@ -304,7 +337,9 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
         private void PlaceBlock(int modeIndex, LeftRightMode leftRightMode, UpperLowerEdges upperLowerEdges, SugiVertex v)
         {
             if (!double.IsNaN(v.HorizontalPositions[modeIndex]))
+            {
                 return;
+            }
 
             double delta = Parameters.VertexDistance;
             v.HorizontalPositions[modeIndex] = 0;
@@ -317,28 +352,32 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     ((leftRightMode == LeftRightMode.Left && _sparseCompactionGraph.InDegree(w) > 0)
                       || (leftRightMode == LeftRightMode.Right && _sparseCompactionGraph.OutDegree(w) > 0)))
                 {
-                    var edges = leftRightMode == LeftRightMode.Left
+                    IEnumerable<IEdge<Data>> edges = leftRightMode == LeftRightMode.Left
                         ? _sparseCompactionGraph.InEdges(w)
                         : _sparseCompactionGraph.OutEdges(w);
-                    foreach (var edge in edges)
+                    foreach (IEdge<Data> edge in edges)
                     {
                         SugiVertex u = null;
                         Data pred = leftRightMode == LeftRightMode.Left ? edge.Source : edge.Target;
                         if (pred is SugiVertex)
+                        {
                             u = ((SugiVertex)pred).Roots[modeIndex];
+                        }
                         else
                         {
-                            var segment = (Segment)pred;
+                            Segment segment = (Segment)pred;
                             u = upperLowerEdges == UpperLowerEdges.Upper ? segment.PVertex.Roots[modeIndex] : segment.QVertex.Roots[modeIndex];
                         }
                         PlaceBlock(modeIndex, leftRightMode, upperLowerEdges, u);
                         if (v.Sinks[modeIndex] == v)
+                        {
                             v.Sinks[modeIndex] = u.Sinks[modeIndex];
+                        }
                         //var xDelta = delta + (v.Roots[modeIndex].BlockWidths[modeIndex] + u.BlockWidths[modeIndex]) / 2.0;
-                        var xDelta = delta + ((wVertex != null ? wVertex.Size.Width : 0.0) + ((pred is SugiVertex) ? ((SugiVertex)pred).Size.Width : u.BlockWidths[modeIndex])) / 2.0;
+                        double xDelta = delta + ((wVertex != null ? wVertex.Size.Width : 0.0) + ((pred is SugiVertex) ? ((SugiVertex)pred).Size.Width : u.BlockWidths[modeIndex])) / 2.0;
                         if (v.Sinks[modeIndex] != u.Sinks[modeIndex])
                         {
-                            var s = leftRightMode == LeftRightMode.Left
+                            double s = leftRightMode == LeftRightMode.Left
                                 ? v.HorizontalPositions[modeIndex] - u.HorizontalPositions[modeIndex] - xDelta
                                 : u.HorizontalPositions[modeIndex] - v.HorizontalPositions[modeIndex] - xDelta;
 
@@ -356,30 +395,42 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                     }
                 }
                 if (wSegment != null)
+                {
                     w = (upperLowerEdges == UpperLowerEdges.Upper) ? wSegment.QVertex : wSegment.PVertex;
+                }
                 else if (wVertex.Type == VertexTypes.PVertex && upperLowerEdges == UpperLowerEdges.Upper)
+                {
                     w = wVertex.Segment;
+                }
                 else if (wVertex.Type == VertexTypes.QVertex && upperLowerEdges == UpperLowerEdges.Lower)
+                {
                     w = wVertex.Segment;
+                }
                 else
+                {
                     w = wVertex.Aligns[modeIndex];
+                }
             } while (w != v);
         }
 
         private void DoHorizontalCompaction(int modeIndex, LeftRightMode leftRightMode, UpperLowerEdges upperLowerEdges)
         {
-            foreach (var vertex in _graph.Vertices)
+            foreach (SugiVertex vertex in _graph.Vertices)
             {
                 if (vertex.Roots[modeIndex] == vertex)
+                {
                     PlaceBlock(modeIndex, leftRightMode, upperLowerEdges, vertex);
+                }
             }
 
-            foreach (var vertex in _graph.Vertices)
+            foreach (SugiVertex vertex in _graph.Vertices)
             {
                 vertex.HorizontalPositions[modeIndex] = vertex.Roots[modeIndex].HorizontalPositions[modeIndex];
                 if (vertex.Roots[modeIndex].Sinks[modeIndex].Shifts[modeIndex] < double.PositiveInfinity &&
                     vertex.Roots[modeIndex] == vertex)
+                {
                     vertex.HorizontalPositions[modeIndex] += vertex.Roots[modeIndex].Sinks[modeIndex].Shifts[modeIndex];
+                }
             }
         }
 
@@ -401,7 +452,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
             for (int i = layerStart; i != layerEnd; i += layerStep)
             {
                 int r = leftRightMode == LeftRightMode.Left ? int.MinValue : int.MaxValue;
-                var layer = _layers[i];
+                IList<SugiVertex> layer = _layers[i];
                 int vertexStart, vertexEnd, vertexStep;
                 if (leftRightMode == LeftRightMode.Left)
                 {
@@ -417,7 +468,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                 }
                 for (int j = vertexStart; j != vertexEnd; j += vertexStep)
                 {
-                    var vertex = layer[j];
+                    SugiVertex vertex = layer[j];
                     if (vertex.Type == VertexTypes.Original
                         || vertex.Type == VertexTypes.RVertex
                         || (vertex.Type == VertexTypes.PVertex && upperLowerEdges == UpperLowerEdges.Upper)
@@ -428,7 +479,9 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                             ? _graph.InEdges(vertex).OrderBy(e => e.Source.Position).ToList()
                             : _graph.OutEdges(vertex).OrderBy(e => e.Target.Position).ToList();
                         if (neighbourEdges.Count <= 0)
+                        {
                             continue;
+                        }
 
                         int c1 = (int)Math.Floor((neighbourEdges.Count + 1) / 2.0) - 1;
                         int c2 = (int)Math.Ceiling((neighbourEdges.Count + 1) / 2.0) - 1;
@@ -446,11 +499,14 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
                         for (int m = 0; m < medians.Length; m++)
                         {
                             if (vertex.Aligns[modeIndex] != vertex)
+                            {
                                 continue;
-                            var edge = neighbourEdges[medians[m]];
+                            }
+
+                            SugiEdge edge = neighbourEdges[medians[m]];
                             //if (edge.Marked)
                             //    Debug.WriteLine("Edge marked: " + edge.Source.OriginalVertex + ", " + edge.Target.OriginalVertex);
-                            var neighbour = edge.OtherVertex(vertex);
+                            SugiVertex neighbour = edge.OtherVertex(vertex);
                             if (!edge.Marked &&
                                 ((leftRightMode == LeftRightMode.Left && r < neighbour.Position)
                                     || (leftRightMode == LeftRightMode.Right && r > neighbour.Position)))
@@ -483,7 +539,7 @@ namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 
         private void InitializeRootsAndAligns(int modeIndex)
         {
-            foreach (var vertex in _graph.Vertices)
+            foreach (SugiVertex vertex in _graph.Vertices)
             {
                 vertex.Roots[modeIndex] = vertex;
                 vertex.Aligns[modeIndex] = vertex;

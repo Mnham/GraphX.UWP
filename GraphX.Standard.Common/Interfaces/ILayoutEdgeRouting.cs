@@ -1,5 +1,6 @@
-using System.Collections.Generic;
 using GraphX.Measure;
+
+using System.Collections.Generic;
 
 namespace GraphX.Common.Interfaces
 {
@@ -9,9 +10,9 @@ namespace GraphX.Common.Interfaces
     /// </summary>
     /// <typeparam name="TEdge">Edge type</typeparam>
     public interface ILayoutEdgeRouting<TEdge>
-    {       
+    {
         /// <summary>
-        /// Get resulting edge routes collection 
+        /// Get resulting edge routes collection
         /// </summary>
         IDictionary<TEdge, Point[]> EdgeRoutes { get; }
     }

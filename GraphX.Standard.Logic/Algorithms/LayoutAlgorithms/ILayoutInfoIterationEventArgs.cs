@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-using QuikGraph;
+﻿using QuikGraph;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms
 {

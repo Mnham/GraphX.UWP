@@ -1,9 +1,12 @@
-﻿using System;
+﻿using GraphX.Common.Interfaces;
+
+using QuikGraph;
+using QuikGraph.Algorithms;
+using QuikGraph.Algorithms.ShortestPath;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using GraphX.Common.Interfaces;
-using QuikGraph;
-using QuikGraph.Algorithms.ShortestPath;
 
 namespace GraphX.Common
 {
@@ -21,36 +24,45 @@ namespace GraphX.Common
             where TVertex : class, IGraphXVertex
             where TEdge : class, IGraphXEdge<TVertex>
         {
-            var result = new List<TEdge>();
-            IEnumerable<TEdge> edges;
-            graph.TryGetOutEdges(vertex, out edges);
+            List<TEdge> result = new List<TEdge>();
+            graph.TryGetOutEdges(vertex, out IEnumerable<TEdge> edges);
             if (edges != null)
+            {
                 result.AddRange(edges);
+            }
+
             graph.TryGetInEdges(vertex, out edges);
             if (edges != null)
+            {
                 result.AddRange(edges);
+            }
+
             return result;
         }
 
         public static IEnumerable<TEdge> GetInEdges<TVertex, TEdge>(this IBidirectionalGraph<TVertex, TEdge> graph, TVertex vertex)
-    where TEdge : IEdge<TVertex>
+            where TEdge : IEdge<TVertex>
         {
-            var result = new List<TEdge>();
-            IEnumerable<TEdge> edges;
-            graph.TryGetInEdges(vertex, out edges);
+            List<TEdge> result = new List<TEdge>();
+            graph.TryGetInEdges(vertex, out IEnumerable<TEdge> edges);
             if (edges != null)
+            {
                 result.AddRange(edges);
+            }
+
             return result;
         }
 
         public static IEnumerable<TEdge> GetOutEdges<TVertex, TEdge>(this IBidirectionalGraph<TVertex, TEdge> graph, TVertex vertex)
-where TEdge : IEdge<TVertex>
+            where TEdge : IEdge<TVertex>
         {
-            var result = new List<TEdge>();
-            IEnumerable<TEdge> edges;
-            graph.TryGetOutEdges(vertex, out edges);
+            List<TEdge> result = new List<TEdge>();
+            graph.TryGetOutEdges(vertex, out IEnumerable<TEdge> edges);
             if (edges != null)
+            {
                 result.AddRange(edges);
+            }
+
             return result;
         }
 
@@ -68,7 +80,6 @@ where TEdge : IEdge<TVertex>
                 .Distinct();
         }
 
-
         public static IEnumerable<TVertex> GetOutNeighbours<TVertex, TEdge>(this IVertexAndEdgeListGraph<TVertex, TEdge> g, TVertex vertex)
             where TEdge : IEdge<TVertex>
         {
@@ -83,7 +94,6 @@ where TEdge : IEdge<TVertex>
                     select e.Source).Distinct();
         }
 
-
         /// <summary>
         /// If the graph g is directed, then returns every edges which source is one of the vertices in the <code>set1</code>
         /// and the target is one of the vertices in <code>set2</code>.
@@ -97,21 +107,22 @@ where TEdge : IEdge<TVertex>
         /// <returns>Return the list of the selected edges.</returns>
         public static IEnumerable<TEdge> GetEdgesBetween<TVertex, TEdge>(this IVertexAndEdgeListGraph<TVertex, TEdge> g, List<TVertex> set1, List<TVertex> set2, bool undirected = false)
             where TEdge : IEdge<TVertex>
-            where TVertex: class
+            where TVertex : class
         {
-            var edgesBetween = new List<TEdge>();
+            List<TEdge> edgesBetween = new List<TEdge>();
 
             //vegig kell menni az osszes vertex minden elen, es megnezni, hogy a target hol van
-            foreach (var v in set1)
+            foreach (TVertex v in set1)
             {
                 edgesBetween.AddRange(g.OutEdges(v).Where(edge => set2.Contains(edge.Target)));
-                if(undirected)
-                    edgesBetween.AddRange(g.Edges.Where(a=> a.Target == v).Where(edge => set2.Contains(edge.Source)));
+                if (undirected)
+                {
+                    edgesBetween.AddRange(g.Edges.Where(a => a.Target == v).Where(edge => set2.Contains(edge.Source)));
+                }
             }
 
             return edgesBetween;
         }
-
 
         /// <summary>
         /// Returns with the sources in the graph.
@@ -138,8 +149,7 @@ where TEdge : IEdge<TVertex>
             where TEdge : IEdge<TVertex>
             where TGraph : IBidirectionalGraph<TVertex, TEdge>
         {
-            double[,] distances;
-            return g.GetDiameter<TVertex, TEdge, TGraph>(out distances);
+            return g.GetDiameter<TVertex, TEdge, TGraph>(out double[,] distances);
         }
 
         /// <summary>
@@ -155,14 +165,16 @@ where TEdge : IEdge<TVertex>
         {
             distances = GetDistances<TVertex, TEdge, TGraph>(g);
 
-            var n = g.VertexCount;
-            var distance = double.NegativeInfinity;
-            for (var i = 0; i < n - 1; i++)
+            int n = g.VertexCount;
+            double distance = double.NegativeInfinity;
+            for (int i = 0; i < n - 1; i++)
             {
-                for (var j = i + 1; j < n; j++)
+                for (int j = i + 1; j < n; j++)
                 {
                     if (double.MaxValue == distances[i, j])
+                    {
                         continue;
+                    }
 
                     distance = Math.Max(distance, distances[i, j]);
                 }
@@ -176,36 +188,36 @@ where TEdge : IEdge<TVertex>
             where TEdge : IEdge<TVertex>
             where TGraph : IBidirectionalGraph<TVertex, TEdge>
         {
-            var distances = new double[g.VertexCount, g.VertexCount];
-            for (var k = 0; k < g.VertexCount; k++)
+            double[,] distances = new double[g.VertexCount, g.VertexCount];
+            for (int k = 0; k < g.VertexCount; k++)
             {
-                for (var j = 0; j < g.VertexCount; j++)
+                for (int j = 0; j < g.VertexCount; j++)
                 {
                     distances[k, j] = double.PositiveInfinity;
                 }
             }
 
-            var undirected = new UndirectedBidirectionalGraph<TVertex, TEdge>(g);
+            UndirectedBidirectionalGraph<TVertex, TEdge> undirected = new UndirectedBidirectionalGraph<TVertex, TEdge>(g);
             //minden йlet egy hosszal veszьnk figyelembe - unweighted
-            var weights = new Dictionary<TEdge, double>();
-            foreach (var edge in undirected.Edges)
+            Dictionary<TEdge, double> weights = new Dictionary<TEdge, double>();
+            foreach (TEdge edge in undirected.Edges)
             {
                 weights[edge] = 1;
             }
 
             //compute the distances from every vertex: O(n(n^2 + e)) complexity
-            var i = 0;
-            foreach (var source in g.Vertices)
+            int i = 0;
+            foreach (TVertex source in g.Vertices)
             {
                 //compute the distances from the 'source'
-                var spaDijkstra =
-                    new UndirectedDijkstraShortestPathAlgorithm<TVertex, TEdge>(undirected, edge => weights[edge], QuikGraph.Algorithms.DistanceRelaxers.ShortestDistance);
+                UndirectedDijkstraShortestPathAlgorithm<TVertex, TEdge> spaDijkstra =
+                    new UndirectedDijkstraShortestPathAlgorithm<TVertex, TEdge>(undirected, edge => weights[edge], DistanceRelaxers.ShortestDistance);
                 spaDijkstra.Compute(source);
 
-                var j = 0;
-                foreach (var v in undirected.Vertices)
+                int j = 0;
+                foreach (TVertex v in undirected.Vertices)
                 {
-                    var d = spaDijkstra.Distances[v];
+                    double d = spaDijkstra.Distances[v];
                     distances[i, j] = Math.Min(distances[i, j], d);
                     distances[i, j] = Math.Min(distances[i, j], distances[j, i]);
                     distances[j, i] = Math.Min(distances[i, j], distances[j, i]);
@@ -222,16 +234,14 @@ where TEdge : IEdge<TVertex>
             return edge.Source.Equals(thisVertex) ? edge.Target : edge.Source;
         }
 
-
-
         public static void AddEdgeRange<TVertex, TEdge>(this IMutableEdgeListGraph<TVertex, TEdge> graph, IEnumerable<TEdge> edges)
             where TEdge : IEdge<TVertex>
         {
-            foreach (var edge in edges)
+            foreach (TEdge edge in edges)
+            {
                 graph.AddEdge(edge);
+            }
         }
-
-
 
         public static BidirectionalGraph<TNewVertex, TNewEdge> Convert<TOldVertex, TOldEdge, TNewVertex, TNewEdge>(
             this IVertexAndEdgeListGraph<TOldVertex, TOldEdge> oldGraph,
@@ -246,8 +256,6 @@ where TEdge : IEdge<TVertex>
                 edgeMapperFunc);
         }
 
-
-
         public static BidirectionalGraph<TOldVertex, TNewEdge> Convert<TOldVertex, TOldEdge, TNewEdge>(
             this IVertexAndEdgeListGraph<TOldVertex, TOldEdge> oldGraph,
             Func<TOldEdge, TNewEdge> edgeMapperFunc)
@@ -256,8 +264,6 @@ where TEdge : IEdge<TVertex>
         {
             return oldGraph.Convert<TOldVertex, TOldEdge, TOldVertex, TNewEdge>(null, edgeMapperFunc);
         }
-
-
 
         public static TNewGraph Convert<TOldVertex, TOldEdge, TNewVertex, TNewEdge, TNewGraph>(
             this IVertexAndEdgeListGraph<TOldVertex, TOldEdge> oldGraph,
@@ -277,8 +283,6 @@ where TEdge : IEdge<TVertex>
             return newGraph;
         }
 
-
-
         public static TNewGraph Convert<TOldVertex, TOldEdge, TNewEdge, TNewGraph>(
             this IVertexAndEdgeListGraph<TOldVertex, TOldEdge> oldGraph,
             TNewGraph newGraph,
@@ -290,8 +294,6 @@ where TEdge : IEdge<TVertex>
             return oldGraph.Convert<TOldVertex, TOldEdge, TOldVertex, TNewEdge, TNewGraph>(newGraph, null, edgeMapperFunc);
         }
 
-
-
         public static TNewGraph Convert<TOldVertex, TOldEdge, TNewGraph>(
             this IVertexAndEdgeListGraph<TOldVertex, TOldEdge> oldGraph,
             TNewGraph newGraph)
@@ -301,16 +303,17 @@ where TEdge : IEdge<TVertex>
             return oldGraph.Convert<TOldVertex, TOldEdge, TOldVertex, TOldEdge, TNewGraph>(newGraph, null, null);
         }
 
-
         public static BidirectionalGraph<TVertex, TEdge> CopyToBidirectionalGraph<TVertex, TEdge>(
             this IVertexAndEdgeListGraph<TVertex, TEdge> graph, bool includeEmpty = true)
             where TEdge : IEdge<TVertex>
         {
-            var newGraph = new BidirectionalGraph<TVertex, TEdge>();
+            BidirectionalGraph<TVertex, TEdge> newGraph = new BidirectionalGraph<TVertex, TEdge>();
 
             //copy the vertices
-            if(!includeEmpty)
+            if (!includeEmpty)
+            {
                 newGraph.AddVerticesAndEdgeRange(graph.Edges);
+            }
             else
             {
                 newGraph.AddVertexRange(graph.Vertices);
@@ -325,11 +328,13 @@ where TEdge : IEdge<TVertex>
             where TEdge : class, IGraphXEdge<TVertex>
             where TGraph : IMutableBidirectionalGraph<TVertex, TEdge>, new()
         {
-            var newGraph = new TGraph();
+            TGraph newGraph = new TGraph();
 
             //copy the vertices
             if (!includeEmpty)
+            {
                 newGraph.AddVerticesAndEdgeRange(graph.Edges);
+            }
             else
             {
                 newGraph.AddVertexRange(graph.Vertices);

@@ -1,5 +1,6 @@
-using System.Collections.Generic;
 using GraphX.Common.Interfaces;
+
+using System.Collections.Generic;
 
 namespace GraphX.Logic.Algorithms.LayoutAlgorithms.Grouped
 {

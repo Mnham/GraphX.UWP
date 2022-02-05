@@ -2,7 +2,7 @@
 {
     public enum SpanningTreeGeneration
     {
-        BFS, 
+        BFS,
         DFS
     }
 }
